@@ -1,0 +1,48 @@
+name: Build, Test & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    # Läuft NICHT in der GitHub-Cloud, sondern direkt auf dem Raspberry Pi
+    # (siehe README: Selbst-gehosteter Runner)
+    runs-on: [self-hosted, raspberrypi]
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Go einrichten
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Abhängigkeiten laden
+        run: go mod tidy
+
+      - name: Tests ausführen
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Binary bauen
+        run: go build -o household-app-new ./cmd/server
+
+      - name: Laufenden Dienst stoppen
+        run: sudo systemctl stop household-app
+
+      - name: Neue Version einspielen
+        run: |
+          mv household-app-new /opt/household-app/household-app
+          cp -r migrations /opt/household-app/
+          cp -r web /opt/household-app/
+
+      - name: Dienst starten
+        run: sudo systemctl start household-app
+
+      - name: Health-Check
+        run: |
+          sleep 2
+          curl -f http://localhost:8080/healthz

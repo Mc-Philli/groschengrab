@@ -1,0 +1,33 @@
+{{define "dashboard.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Haushalts-App</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header>
+        <h1>Haushalts-App</h1>
+    </header>
+    <main>
+        <h2>Konten</h2>
+        {{if .Accounts}}
+        <table>
+            <tr><th>Name</th><th>Typ</th><th>Saldo</th></tr>
+            {{range .Accounts}}
+            <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Type}}</td>
+                <td>{{printf "%.2f €" .Balance}}</td>
+            </tr>
+            {{end}}
+        </table>
+        {{else}}
+        <p>Noch keine Konten angelegt.</p>
+        {{end}}
+    </main>
+</body>
+</html>
+{{end}}
