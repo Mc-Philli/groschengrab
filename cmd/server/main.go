@@ -36,6 +36,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", h.Dashboard)
 	mux.HandleFunc("GET /healthz", h.Health)
+	mux.HandleFunc("POST /accounts", h.CreateAccount)
+	mux.HandleFunc("POST /transactions", h.CreateTransaction)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	addr := ":8080"

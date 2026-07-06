@@ -12,21 +12,108 @@
         <h1>Haushalts-App</h1>
     </header>
     <main>
-        <h2>Konten</h2>
-        {{if .Accounts}}
-        <table>
-            <tr><th>Name</th><th>Typ</th><th>Saldo</th></tr>
-            {{range .Accounts}}
-            <tr>
-                <td>{{.Name}}</td>
-                <td>{{.Type}}</td>
-                <td>{{printf "%.2f €" .Balance}}</td>
-            </tr>
+        <section>
+            <h2>Konten</h2>
+            {{if .Accounts}}
+            <table>
+                <tr><th>Name</th><th>Typ</th><th>Saldo</th></tr>
+                {{range .Accounts}}
+                <tr>
+                    <td>{{.Name}}</td>
+                    <td>{{.Type}}</td>
+                    <td>{{printf "%.2f €" .Balance}}</td>
+                </tr>
+                {{end}}
+            </table>
+            {{else}}
+            <p>Noch keine Konten angelegt.</p>
             {{end}}
-        </table>
-        {{else}}
-        <p>Noch keine Konten angelegt.</p>
-        {{end}}
+        </section>
+
+        <section>
+            <h2>Neues Konto anlegen</h2>
+            <form method="POST" action="/accounts">
+                <label>Name<br>
+                    <input type="text" name="name" required>
+                </label><br>
+                <label>Typ<br>
+                    <select name="type">
+                        <option value="Girokonto">Girokonto</option>
+                        <option value="Sparkonto">Sparkonto</option>
+                        <option value="Bar">Bar</option>
+                        <option value="Depot">Depot</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </label><br>
+                <label>Startsaldo (€)<br>
+                    <input type="text" name="start_balance" value="0">
+                </label><br>
+                <button type="submit">Konto anlegen</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Buchung erfassen</h2>
+            {{if .Accounts}}
+            <form method="POST" action="/transactions">
+                <label>Konto<br>
+                    <select name="account_id" required>
+                        {{range .Accounts}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </label><br>
+                <label>Art<br>
+                    <select name="kind" required>
+                        <option value="expense">Ausgabe</option>
+                        <option value="income">Einnahme</option>
+                    </select>
+                </label><br>
+                <label>Betrag (€)<br>
+                    <input type="text" name="amount" placeholder="z. B. 12,50" required>
+                </label><br>
+                <label>Datum<br>
+                    <input type="date" name="booked_at">
+                </label><br>
+                <label>Kategorie<br>
+                    <input type="text" name="category" placeholder="z. B. Lebensmittel">
+                </label><br>
+                <label>Beschreibung<br>
+                    <input type="text" name="description">
+                </label><br>
+                <label>Wer bucht?<br>
+                    <input type="text" name="booked_by" placeholder="Dein Name" required>
+                </label><br>
+                <button type="submit">Buchen</button>
+            </form>
+            {{else}}
+            <p>Bitte zuerst ein Konto anlegen.</p>
+            {{end}}
+        </section>
+
+        <section>
+            <h2>Letzte Buchungen</h2>
+            {{if .Transactions}}
+            <table>
+                <tr>
+                    <th>Datum</th><th>Konto</th><th>Kategorie</th>
+                    <th>Beschreibung</th><th>Von</th><th>Betrag</th>
+                </tr>
+                {{range .Transactions}}
+                <tr>
+                    <td>{{.BookedAt}}</td>
+                    <td>{{.AccountName}}</td>
+                    <td>{{.Category}}</td>
+                    <td>{{.Description}}</td>
+                    <td>{{.UserName}}</td>
+                    <td>{{if eq .Kind "expense"}}-{{end}}{{printf "%.2f €" .Amount}}</td>
+                </tr>
+                {{end}}
+            </table>
+            {{else}}
+            <p>Noch keine Buchungen erfasst.</p>
+            {{end}}
+        </section>
     </main>
 </body>
 </html>

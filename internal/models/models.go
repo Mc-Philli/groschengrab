@@ -47,3 +47,16 @@ type OtherAsset struct {
 	Type         string
 	CurrentValue float64
 }
+
+// TransactionView ist eine für die Anzeige aufbereitete Buchung
+// (Konto- und Nutzername statt nur IDs).
+type TransactionView struct {
+	ID          int64
+	AccountName string
+	UserName    string
+	Amount      float64
+	BookedAt    string
+	Category    string
+	Description string
+	Kind        string
+}
