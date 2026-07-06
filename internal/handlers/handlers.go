@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -42,7 +44,14 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Accounts     []models.Account
 		Transactions []models.TransactionView
-	}{Accounts: accounts, Transactions: transactions}
+		ErrorMsg     string
+		SuccessMsg   string
+	}{
+		Accounts:     accounts,
+		Transactions: transactions,
+		ErrorMsg:     r.URL.Query().Get("error"),
+		SuccessMsg:   r.URL.Query().Get("success"),
+	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "dashboard.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -220,12 +229,108 @@ func (h *Handlers) findOrCreateUser(name string) (int64, error) {
 	return id, nil
 }
 
-// parseAmount akzeptiert deutsche ("12,50") und englische ("12.50") Schreibweise.
+// DeleteTransaction löscht eine Buchung und macht ihre Wirkung auf den
+// Kontosaldo rückgängig.
+func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Ungültige Buchungs-ID", http.StatusBadRequest)
+		return
+	}
+
+	var accountID int64
+	var amount float64
+	var kind string
+	err = h.db.QueryRow(`SELECT account_id, amount, kind FROM transactions WHERE id = ?`, id).
+		Scan(&accountID, &amount, &kind)
+	if err == sql.ErrNoRows {
+		redirectWithMessage(w, r, "error", "Diese Buchung wurde nicht gefunden.")
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`DELETE FROM transactions WHERE id = ?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Wirkung der Buchung auf den Saldo umkehren: Ausgabe -> Saldo wieder
+	// erhöhen, Einnahme -> Saldo wieder verringern.
+	delta := -amount
+	if kind == "expense" {
+		delta = amount
+	}
+	if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, delta, accountID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	redirectWithMessage(w, r, "success", "Buchung gelöscht.")
+}
+
+// DeleteAccount löscht ein Konto – aber nur, wenn keine Buchungen mehr daran
+// hängen, damit keine verwaisten Daten entstehen.
+func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Ungültige Konto-ID", http.StatusBadRequest)
+		return
+	}
+
+	var count int
+	if err := h.db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE account_id = ?`, id).Scan(&count); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if count > 0 {
+		redirectWithMessage(w, r, "error", fmt.Sprintf(
+			"Konto kann nicht gelöscht werden: %d Buchung(en) hängen noch daran. Bitte zuerst diese Buchungen löschen.", count,
+		))
+		return
+	}
+
+	if _, err := h.db.Exec(`DELETE FROM accounts WHERE id = ?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	redirectWithMessage(w, r, "success", "Konto gelöscht.")
+}
+
+// redirectWithMessage leitet zurück zum Dashboard und hängt eine
+// Erfolgs- oder Fehlermeldung als URL-Parameter an.
+func redirectWithMessage(w http.ResponseWriter, r *http.Request, kind, message string) {
+	q := url.Values{}
+	q.Set(kind, message)
+	http.Redirect(w, r, "/?"+q.Encode(), http.StatusSeeOther)
+}
+
+// parseAmount akzeptiert Schweizer Schreibweise: Punkt als Dezimaltrennzeichen,
+// Apostroph (optional) als Tausendertrennzeichen, z. B. "1'234.50" oder "12.50".
+// Ein Komma wird zur Sicherheit ebenfalls als Dezimaltrennzeichen akzeptiert.
 func parseAmount(s string) (float64, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return 0, nil
 	}
-	s = strings.ReplaceAll(s, ",", ".")
+	s = strings.ReplaceAll(s, "'", "")
+	s = strings.ReplaceAll(s, " ", "")
+	if strings.Contains(s, ",") && !strings.Contains(s, ".") {
+		s = strings.ReplaceAll(s, ",", ".")
+	}
 	return strconv.ParseFloat(s, 64)
 }

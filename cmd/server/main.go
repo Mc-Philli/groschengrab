@@ -26,7 +26,10 @@ func main() {
 		log.Fatalf("Migrationen fehlgeschlagen: %v", err)
 	}
 
-	tmpl, err := template.ParseGlob("web/templates/*.html")
+	tmpl, err := template.New("").Funcs(template.FuncMap{
+		"chf":   handlers.FormatCHF,
+		"txchf": handlers.FormatTransactionAmount,
+	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)
 	}
@@ -37,7 +40,9 @@ func main() {
 	mux.HandleFunc("GET /{$}", h.Dashboard)
 	mux.HandleFunc("GET /healthz", h.Health)
 	mux.HandleFunc("POST /accounts", h.CreateAccount)
+	mux.HandleFunc("POST /accounts/{id}/delete", h.DeleteAccount)
 	mux.HandleFunc("POST /transactions", h.CreateTransaction)
+	mux.HandleFunc("POST /transactions/{id}/delete", h.DeleteTransaction)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	addr := ":8080"

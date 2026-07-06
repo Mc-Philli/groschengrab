@@ -8,6 +8,7 @@ WorkingDirectory=/opt/household-app
 ExecStart=/opt/household-app/household-app
 Environment=APP_DB_PATH=/opt/household-app/data/app.db
 Restart=on-failure
+# Wird von deploy/setup-pi.sh automatisch auf den echten Benutzernamen gesetzt
 User=pi
 
 [Install]

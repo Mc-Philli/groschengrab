@@ -1,9 +1,63 @@
+:root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --radius: 10px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: system-ui, sans-serif;
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-    color: #222;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0 0 3rem 0;
+}
+
+.app-header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.15rem;
+    color: var(--text);
+    border-bottom: 2px solid var(--bg);
+    padding-bottom: 0.6rem;
+    margin-bottom: 1rem;
 }
 
 table {
@@ -13,34 +67,139 @@ table {
 
 th, td {
     text-align: left;
-    padding: 0.5rem;
-    border-bottom: 1px solid #ddd;
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
 }
 
-section {
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #eee;
+th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
-form label {
+tr:hover td {
+    background: #fafbfc;
+}
+
+.col-action {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.badge {
+    display: inline-block;
+    background: #eef2ff;
+    color: var(--primary-dark);
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.amount-income {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.amount-expense {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.empty-hint {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.banner {
+    padding: 0.9rem 1.2rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.banner-success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.banner-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem 1.5rem;
+}
+
+.form-grid label {
     display: block;
-    margin-bottom: 0.75rem;
-    font-size: 0.9rem;
-    color: #444;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
-form input, form select {
-    margin-top: 0.25rem;
-    padding: 0.4rem;
-    font-size: 1rem;
+.form-grid input,
+.form-grid select {
+    margin-top: 0.3rem;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.95rem;
     width: 100%;
-    max-width: 320px;
-    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: white;
+    color: var(--text);
 }
 
-form button {
-    padding: 0.5rem 1.2rem;
-    font-size: 1rem;
+.form-grid input:focus,
+.form-grid select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-actions {
+    grid-column: 1 / -1;
+    margin-top: 0.25rem;
+}
+
+.btn {
+    padding: 0.55rem 1.3rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid #fecaca;
+}
+
+.btn-danger:hover {
+    background: #fef2f2;
+}
+
+.btn-small {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
 }

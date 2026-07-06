@@ -8,34 +8,47 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
-    <header>
-        <h1>Haushalts-App</h1>
+    <header class="app-header">
+        <h1>🏠 Haushalts-App</h1>
     </header>
     <main>
-        <section>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <section class="card">
             <h2>Konten</h2>
             {{if .Accounts}}
             <table>
-                <tr><th>Name</th><th>Typ</th><th>Saldo</th></tr>
+                <tr><th>Name</th><th>Typ</th><th>Saldo</th><th></th></tr>
                 {{range .Accounts}}
                 <tr>
                     <td>{{.Name}}</td>
-                    <td>{{.Type}}</td>
-                    <td>{{printf "%.2f €" .Balance}}</td>
+                    <td><span class="badge">{{.Type}}</span></td>
+                    <td class="{{if lt .Balance 0.0}}amount-expense{{else}}amount-income{{end}}">{{chf .Balance}}</td>
+                    <td class="col-action">
+                        <form method="POST" action="/accounts/{{.ID}}/delete"
+                              onsubmit="return confirm('Konto «{{.Name}}» wirklich löschen?')">
+                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        </form>
+                    </td>
                 </tr>
                 {{end}}
             </table>
             {{else}}
-            <p>Noch keine Konten angelegt.</p>
+            <p class="empty-hint">Noch keine Konten angelegt.</p>
             {{end}}
         </section>
 
-        <section>
+        <section class="card">
             <h2>Neues Konto anlegen</h2>
-            <form method="POST" action="/accounts">
+            <form method="POST" action="/accounts" class="form-grid">
                 <label>Name<br>
                     <input type="text" name="name" required>
-                </label><br>
+                </label>
                 <label>Typ<br>
                     <select name="type">
                         <option value="Girokonto">Girokonto</option>
@@ -44,74 +57,86 @@
                         <option value="Depot">Depot</option>
                         <option value="Sonstiges">Sonstiges</option>
                     </select>
-                </label><br>
-                <label>Startsaldo (€)<br>
-                    <input type="text" name="start_balance" value="0">
-                </label><br>
-                <button type="submit">Konto anlegen</button>
+                </label>
+                <label>Startsaldo (CHF)<br>
+                    <input type="text" name="start_balance" value="0" placeholder="z. B. 1'000.00">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Konto anlegen</button>
+                </div>
             </form>
         </section>
 
-        <section>
+        <section class="card">
             <h2>Buchung erfassen</h2>
             {{if .Accounts}}
-            <form method="POST" action="/transactions">
+            <form method="POST" action="/transactions" class="form-grid">
                 <label>Konto<br>
                     <select name="account_id" required>
                         {{range .Accounts}}
                         <option value="{{.ID}}">{{.Name}}</option>
                         {{end}}
                     </select>
-                </label><br>
+                </label>
                 <label>Art<br>
                     <select name="kind" required>
                         <option value="expense">Ausgabe</option>
                         <option value="income">Einnahme</option>
                     </select>
-                </label><br>
-                <label>Betrag (€)<br>
-                    <input type="text" name="amount" placeholder="z. B. 12,50" required>
-                </label><br>
+                </label>
+                <label>Betrag (CHF)<br>
+                    <input type="text" name="amount" placeholder="z. B. 12.50" required>
+                </label>
                 <label>Datum<br>
                     <input type="date" name="booked_at">
-                </label><br>
+                </label>
                 <label>Kategorie<br>
                     <input type="text" name="category" placeholder="z. B. Lebensmittel">
-                </label><br>
+                </label>
                 <label>Beschreibung<br>
                     <input type="text" name="description">
-                </label><br>
+                </label>
                 <label>Wer bucht?<br>
                     <input type="text" name="booked_by" placeholder="Dein Name" required>
-                </label><br>
-                <button type="submit">Buchen</button>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Buchen</button>
+                </div>
             </form>
             {{else}}
-            <p>Bitte zuerst ein Konto anlegen.</p>
+            <p class="empty-hint">Bitte zuerst ein Konto anlegen.</p>
             {{end}}
         </section>
 
-        <section>
+        <section class="card">
             <h2>Letzte Buchungen</h2>
             {{if .Transactions}}
             <table>
                 <tr>
                     <th>Datum</th><th>Konto</th><th>Kategorie</th>
-                    <th>Beschreibung</th><th>Von</th><th>Betrag</th>
+                    <th>Beschreibung</th><th>Von</th><th>Betrag</th><th></th>
                 </tr>
                 {{range .Transactions}}
                 <tr>
                     <td>{{.BookedAt}}</td>
                     <td>{{.AccountName}}</td>
-                    <td>{{.Category}}</td>
+                    <td>{{if .Category}}<span class="badge">{{.Category}}</span>{{end}}</td>
                     <td>{{.Description}}</td>
                     <td>{{.UserName}}</td>
-                    <td>{{if eq .Kind "expense"}}-{{end}}{{printf "%.2f €" .Amount}}</td>
+                    <td class="{{if eq .Kind "expense"}}amount-expense{{else}}amount-income{{end}}">
+                        {{txchf .Kind .Amount}}
+                    </td>
+                    <td class="col-action">
+                        <form method="POST" action="/transactions/{{.ID}}/delete"
+                              onsubmit="return confirm('Diese Buchung wirklich löschen?')">
+                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        </form>
+                    </td>
                 </tr>
                 {{end}}
             </table>
             {{else}}
-            <p>Noch keine Buchungen erfasst.</p>
+            <p class="empty-hint">Noch keine Buchungen erfasst.</p>
             {{end}}
         </section>
     </main>
