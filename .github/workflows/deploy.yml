@@ -8,7 +8,7 @@ jobs:
   build-and-deploy:
     # Läuft NICHT in der GitHub-Cloud, sondern direkt auf dem Raspberry Pi
     # (siehe README: Selbst-gehosteter Runner)
-    runs-on: [self-hosted, raspberrypi]
+    runs-on: [self-hosted]
 
     steps:
       - name: Code auschecken
