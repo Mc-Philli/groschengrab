@@ -43,6 +43,10 @@ func main() {
 	mux.HandleFunc("POST /accounts/{id}/delete", h.DeleteAccount)
 	mux.HandleFunc("POST /transactions", h.CreateTransaction)
 	mux.HandleFunc("POST /transactions/{id}/delete", h.DeleteTransaction)
+	mux.HandleFunc("GET /export/accounts.csv", h.ExportAccounts)
+	mux.HandleFunc("GET /export/transactions.csv", h.ExportTransactions)
+	mux.HandleFunc("POST /import/accounts", h.ImportAccounts)
+	mux.HandleFunc("POST /import/transactions", h.ImportTransactions)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	addr := ":8080"

@@ -17,12 +17,13 @@ type Account struct {
 type Transaction struct {
 	ID          int64
 	AccountID   int64
+	ToAccountID *int64 // nur bei Transfers gesetzt
 	UserID      int64
 	Amount      float64
 	BookedAt    string
 	Category    string
 	Description string
-	Kind        string // "income" oder "expense"
+	Kind        string // "income", "expense" oder "transfer"
 }
 
 type Receipt struct {
@@ -53,6 +54,7 @@ type OtherAsset struct {
 type TransactionView struct {
 	ID          int64
 	AccountName string
+	ToAccountName string // nur bei Transfers gefüllt
 	UserName    string
 	Amount      float64
 	BookedAt    string

@@ -46,11 +46,13 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Transactions []models.TransactionView
 		ErrorMsg     string
 		SuccessMsg   string
+		Today        string
 	}{
 		Accounts:     accounts,
 		Transactions: transactions,
 		ErrorMsg:     r.URL.Query().Get("error"),
 		SuccessMsg:   r.URL.Query().Get("success"),
+		Today:        time.Now().Format("2006-01-02"),
 	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "dashboard.html", data); err != nil {
@@ -78,9 +80,10 @@ func (h *Handlers) loadAccounts() ([]models.Account, error) {
 
 func (h *Handlers) loadTransactions() ([]models.TransactionView, error) {
 	rows, err := h.db.Query(`
-		SELECT t.id, a.name, u.name, t.amount, t.booked_at, t.category, t.description, t.kind
+		SELECT t.id, a.name, COALESCE(b.name, ''), u.name, t.amount, t.booked_at, t.category, t.description, t.kind
 		FROM transactions t
 		JOIN accounts a ON a.id = t.account_id
+		LEFT JOIN accounts b ON b.id = t.to_account_id
 		JOIN users u ON u.id = t.user_id
 		ORDER BY t.booked_at DESC, t.id DESC
 		LIMIT 50`)
@@ -92,7 +95,7 @@ func (h *Handlers) loadTransactions() ([]models.TransactionView, error) {
 	var list []models.TransactionView
 	for rows.Next() {
 		var tv models.TransactionView
-		if err := rows.Scan(&tv.ID, &tv.AccountName, &tv.UserName, &tv.Amount, &tv.BookedAt, &tv.Category, &tv.Description, &tv.Kind); err != nil {
+		if err := rows.Scan(&tv.ID, &tv.AccountName, &tv.ToAccountName, &tv.UserName, &tv.Amount, &tv.BookedAt, &tv.Category, &tv.Description, &tv.Kind); err != nil {
 			return nil, err
 		}
 		list = append(list, tv)
@@ -132,8 +135,19 @@ func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// transactionRecord bündelt die Rohdaten einer Buchung – wird sowohl vom
+// manuellen Formular als auch vom CSV-Import verwendet.
+type transactionRecord struct {
+	BookedAt    string
+	Kind        string // "income", "expense" oder "transfer"
+	Amount      float64
+	Category    string
+	Description string
+}
+
 // CreateTransaction verarbeitet das Formular "Buchung erfassen" und
-// aktualisiert dabei innerhalb einer Transaktion auch den Kontosaldo.
+// aktualisiert dabei innerhalb einer Datenbank-Transaktion auch den/die
+// betroffenen Kontosaldo/-salden.
 func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -147,7 +161,7 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	kind := r.FormValue("kind")
-	if kind != "income" && kind != "expense" {
+	if kind != "income" && kind != "expense" && kind != "transfer" {
 		http.Error(w, "Ungültige Buchungsart", http.StatusBadRequest)
 		return
 	}
@@ -158,13 +172,24 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var toAccountID sql.NullInt64
+	if kind == "transfer" {
+		toID, err := strconv.ParseInt(r.FormValue("to_account_id"), 10, 64)
+		if err != nil {
+			http.Error(w, "Bitte ein Zielkonto für den Transfer auswählen", http.StatusBadRequest)
+			return
+		}
+		if toID == accountID {
+			http.Error(w, "Quell- und Zielkonto müssen unterschiedlich sein", http.StatusBadRequest)
+			return
+		}
+		toAccountID = sql.NullInt64{Int64: toID, Valid: true}
+	}
+
 	bookedAt := strings.TrimSpace(r.FormValue("booked_at"))
 	if bookedAt == "" {
 		bookedAt = time.Now().Format("2006-01-02")
 	}
-
-	category := strings.TrimSpace(r.FormValue("category"))
-	description := strings.TrimSpace(r.FormValue("description"))
 
 	userID, err := h.findOrCreateUser(r.FormValue("booked_by"))
 	if err != nil {
@@ -172,37 +197,59 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := h.db.Begin()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.Exec(
-		`INSERT INTO transactions (account_id, user_id, amount, booked_at, category, description, kind)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		accountID, userID, amount, bookedAt, category, description, kind,
-	); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	rec := transactionRecord{
+		BookedAt:    bookedAt,
+		Kind:        kind,
+		Amount:      amount,
+		Category:    strings.TrimSpace(r.FormValue("category")),
+		Description: strings.TrimSpace(r.FormValue("description")),
 	}
 
-	delta := amount
-	if kind == "expense" {
-		delta = -amount
-	}
-	if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, delta, accountID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err := h.insertTransactionAndUpdateBalance(accountID, toAccountID, userID, rec); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// insertTransactionAndUpdateBalance schreibt eine Buchung und passt je nach
+// Art (Einnahme/Ausgabe/Transfer) die betroffenen Kontosalden an – alles
+// innerhalb einer einzigen Datenbank-Transaktion (alles-oder-nichts).
+func (h *Handlers) insertTransactionAndUpdateBalance(accountID int64, toAccountID sql.NullInt64, userID int64, rec transactionRecord) error {
+	tx, err := h.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(
+		`INSERT INTO transactions (account_id, to_account_id, user_id, amount, booked_at, category, description, kind)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		accountID, toAccountID, userID, rec.Amount, rec.BookedAt, rec.Category, rec.Description, rec.Kind,
+	); err != nil {
+		return err
+	}
+
+	switch rec.Kind {
+	case "income":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, rec.Amount, accountID); err != nil {
+			return err
+		}
+	case "expense":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, rec.Amount, accountID); err != nil {
+			return err
+		}
+	case "transfer":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, rec.Amount, accountID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, rec.Amount, toAccountID.Int64); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 // findOrCreateUser sucht einen Nutzer per Name oder legt ihn ohne Passwort an.
@@ -239,10 +286,11 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var accountID int64
+	var toAccountID sql.NullInt64
 	var amount float64
 	var kind string
-	err = h.db.QueryRow(`SELECT account_id, amount, kind FROM transactions WHERE id = ?`, id).
-		Scan(&accountID, &amount, &kind)
+	err = h.db.QueryRow(`SELECT account_id, to_account_id, amount, kind FROM transactions WHERE id = ?`, id).
+		Scan(&accountID, &toAccountID, &amount, &kind)
 	if err == sql.ErrNoRows {
 		redirectWithMessage(w, r, "error", "Diese Buchung wurde nicht gefunden.")
 		return
@@ -263,15 +311,29 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wirkung der Buchung auf den Saldo umkehren: Ausgabe -> Saldo wieder
-	// erhöhen, Einnahme -> Saldo wieder verringern.
-	delta := -amount
-	if kind == "expense" {
-		delta = amount
-	}
-	if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, delta, accountID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	// Wirkung der Buchung auf den/die Saldo/Salden umkehren.
+	switch kind {
+	case "expense":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, amount, accountID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case "income":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, amount, accountID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case "transfer":
+		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, amount, accountID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if toAccountID.Valid {
+			if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, amount, toAccountID.Int64); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

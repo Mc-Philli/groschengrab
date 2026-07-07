@@ -79,16 +79,25 @@
                     </select>
                 </label>
                 <label>Art<br>
-                    <select name="kind" required>
+                    <select name="kind" required
+                            onchange="document.getElementById('to-account-field').style.display = (this.value === 'transfer') ? 'block' : 'none'">
                         <option value="expense">Ausgabe</option>
                         <option value="income">Einnahme</option>
+                        <option value="transfer">Transfer (zwischen Konten)</option>
+                    </select>
+                </label>
+                <label id="to-account-field" style="display:none">Zielkonto (bei Transfer)<br>
+                    <select name="to_account_id">
+                        {{range .Accounts}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
                     </select>
                 </label>
                 <label>Betrag (CHF)<br>
                     <input type="text" name="amount" placeholder="z. B. 12.50" required>
                 </label>
                 <label>Datum<br>
-                    <input type="date" name="booked_at">
+                    <input type="date" name="booked_at" value="{{.Today}}">
                 </label>
                 <label>Kategorie<br>
                     <input type="text" name="category" placeholder="z. B. Lebensmittel">
@@ -119,11 +128,11 @@
                 {{range .Transactions}}
                 <tr>
                     <td>{{.BookedAt}}</td>
-                    <td>{{.AccountName}}</td>
+                    <td>{{.AccountName}}{{if eq .Kind "transfer"}} → {{.ToAccountName}}{{end}}</td>
                     <td>{{if .Category}}<span class="badge">{{.Category}}</span>{{end}}</td>
                     <td>{{.Description}}</td>
                     <td>{{.UserName}}</td>
-                    <td class="{{if eq .Kind "expense"}}amount-expense{{else}}amount-income{{end}}">
+                    <td class="{{if eq .Kind "expense"}}amount-expense{{else if eq .Kind "income"}}amount-income{{else}}amount-transfer{{end}}">
                         {{txchf .Kind .Amount}}
                     </td>
                     <td class="col-action">
@@ -138,6 +147,31 @@
             {{else}}
             <p class="empty-hint">Noch keine Buchungen erfasst.</p>
             {{end}}
+        </section>
+
+        <section class="card">
+            <h2>Export &amp; Import</h2>
+            <div class="export-links">
+                <a class="btn btn-secondary" href="/export/accounts.csv">⬇️ Konten exportieren</a>
+                <a class="btn btn-secondary" href="/export/transactions.csv">⬇️ Buchungen exportieren</a>
+            </div>
+
+            <div class="import-grid">
+                <form method="POST" action="/import/accounts" enctype="multipart/form-data" class="import-form">
+                    <label>Konten importieren<br>
+                        <input type="file" name="file" accept=".csv" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-small">Importieren</button>
+                </form>
+
+                <form method="POST" action="/import/transactions" enctype="multipart/form-data" class="import-form">
+                    <label>Buchungen importieren<br>
+                        <input type="file" name="file" accept=".csv" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-small">Importieren</button>
+                </form>
+            </div>
+            <p class="hint-text">Das Import-Format entspricht genau dem Export. Am einfachsten: erst exportieren, in Excel/Numbers bearbeiten, dann wieder importieren. Konten beim Buchungs-Import müssen bereits existieren (Zuordnung über den Namen).</p>
         </section>
     </main>
 </body>

@@ -109,6 +109,59 @@ tr:hover td {
     font-weight: 600;
 }
 
+.amount-transfer {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.export-links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.import-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.import-form label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+}
+
+.import-form input[type="file"] {
+    margin-top: 0.3rem;
+    display: block;
+    width: 100%;
+    font-size: 0.85rem;
+}
+
+.hint-text {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--primary-dark);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: #eef2ff;
+    border-color: var(--primary);
+}
+
 .empty-hint {
     color: var(--text-muted);
     font-style: italic;
