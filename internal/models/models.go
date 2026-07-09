@@ -42,6 +42,22 @@ type Holding struct {
 	PurchaseDate  string
 }
 
+// HoldingView ist eine Depot-Position mit live abgefragtem Kurs.
+type HoldingView struct {
+	ID             int64
+	Ticker         string
+	Quantity       float64
+	PurchasePrice  float64
+	PurchaseDate   string
+	PriceAvailable bool
+	CurrentPrice   float64
+	Currency       string
+	PurchaseValue  float64
+	CurrentValue   float64
+	GainAbsolute   float64
+	GainPercent    float64
+}
+
 type OtherAsset struct {
 	ID           int64
 	Name         string

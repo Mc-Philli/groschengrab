@@ -1,0 +1,98 @@
+{{define "depot.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Depot – Haushalts-App</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-inner">
+            <h1>🏠 Haushalts-App</h1>
+            <nav>
+                <a href="/" class="{{if eq .Page "home"}}active{{end}}">Start</a>
+                <a href="/depot" class="{{if eq .Page "depot"}}active{{end}}">Depot</a>
+                <a href="/settings" class="{{if eq .Page "settings"}}active{{end}}">Einstellungen</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <section class="card total-assets-card">
+            <div class="total-assets-label">Depot-Wert (CHF-Positionen)</div>
+            <div class="total-assets-value">{{chf .TotalValueCHF}}</div>
+            {{if .HasForeignCurrency}}
+            <p class="hint-text">Positionen in Fremdwährung sind hier nicht mit eingerechnet (siehe Betrag je Position unten). Der Depot-Wert fließt aktuell noch nicht ins „Total Vermögen" auf der Startseite ein.</p>
+            {{end}}
+        </section>
+
+        <section class="card">
+            <h2>Positionen</h2>
+            {{if .Holdings}}
+            <table>
+                <tr>
+                    <th>Ticker</th><th>Anzahl</th><th>Kaufpreis</th><th>Kaufdatum</th>
+                    <th>Aktueller Kurs</th><th>Wert</th><th>Gewinn/Verlust</th><th></th>
+                </tr>
+                {{range .Holdings}}
+                <tr>
+                    <td>{{.Ticker}}</td>
+                    <td>{{printf "%.4f" .Quantity}}</td>
+                    <td>{{printf "%.2f" .PurchasePrice}}</td>
+                    <td>{{.PurchaseDate}}</td>
+                    {{if .PriceAvailable}}
+                    <td>{{printf "%.2f" .CurrentPrice}} {{.Currency}}</td>
+                    <td>{{printf "%.2f" .CurrentValue}} {{.Currency}}</td>
+                    <td class="{{if lt .GainAbsolute 0.0}}amount-expense{{else}}amount-income{{end}}">
+                        {{printf "%.2f" .GainAbsolute}} {{.Currency}} ({{printf "%.1f" .GainPercent}}%)
+                    </td>
+                    {{else}}
+                    <td colspan="3" class="empty-hint">Kurs nicht verfügbar</td>
+                    {{end}}
+                    <td class="col-action">
+                        <form method="POST" action="/holdings/{{.ID}}/delete"
+                              onsubmit="return confirm('Position «{{.Ticker}}» wirklich löschen?')">
+                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        </form>
+                    </td>
+                </tr>
+                {{end}}
+            </table>
+            {{else}}
+            <p class="empty-hint">Noch keine Positionen im Depot.</p>
+            {{end}}
+        </section>
+
+        <section class="card">
+            <h2>Position hinzufügen</h2>
+            <form method="POST" action="/holdings" class="form-grid">
+                <label>Ticker<br>
+                    <input type="text" name="ticker" placeholder="z. B. AAPL, VWRL.SW, NESN.SW" required>
+                </label>
+                <label>Anzahl<br>
+                    <input type="text" name="quantity" placeholder="z. B. 10" required>
+                </label>
+                <label>Kaufpreis pro Stück<br>
+                    <input type="text" name="purchase_price" placeholder="z. B. 95.30" required>
+                </label>
+                <label>Kaufdatum<br>
+                    <input type="date" name="purchase_date" value="{{.Today}}">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                </div>
+            </form>
+            <p class="hint-text">Ticker-Symbole findest du z. B. auf finance.yahoo.com. Schweizer Titel an der SIX haben meist das Suffix „.SW" (z. B. „NESN.SW" für Nestlé, „VWRL.SW" für einen weltweiten ETF).</p>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
