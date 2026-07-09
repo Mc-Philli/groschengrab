@@ -75,12 +75,11 @@ func (h *Handlers) ExportTransactions(w http.ResponseWriter, r *http.Request) {
 }
 
 // ImportAccounts liest eine hochgeladene CSV-Datei (Format wie ExportAccounts)
-// und legt daraus neue Konten an. Bestehende Konten werden nicht verändert –
-// jede Zeile erzeugt ein zusätzliches Konto.
+// und legt daraus neue Konten an.
 func (h *Handlers) ImportAccounts(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		redirectWithMessage(w, r, "error", "Bitte eine CSV-Datei auswählen.")
+		redirectWithMessage(w, r, "/settings", "error", "Bitte eine CSV-Datei auswählen.")
 		return
 	}
 	defer file.Close()
@@ -89,11 +88,11 @@ func (h *Handlers) ImportAccounts(w http.ResponseWriter, r *http.Request) {
 	reader.FieldsPerRecord = -1
 	rows, err := reader.ReadAll()
 	if err != nil {
-		redirectWithMessage(w, r, "error", "CSV konnte nicht gelesen werden: "+err.Error())
+		redirectWithMessage(w, r, "/settings", "error", "CSV konnte nicht gelesen werden: "+err.Error())
 		return
 	}
 	if len(rows) < 2 {
-		redirectWithMessage(w, r, "error", "Die CSV-Datei enthält keine Daten (nur Kopfzeile oder leer).")
+		redirectWithMessage(w, r, "/settings", "error", "Die CSV-Datei enthält keine Daten (nur Kopfzeile oder leer).")
 		return
 	}
 
@@ -124,7 +123,7 @@ func (h *Handlers) ImportAccounts(w http.ResponseWriter, r *http.Request) {
 		imported++
 	}
 
-	finishImport(w, r, imported, "Konto(s)", problems)
+	finishImport(w, r, "/settings", imported, "Konto(s)", problems)
 }
 
 // ImportTransactions liest eine hochgeladene CSV-Datei (Format wie
@@ -133,7 +132,7 @@ func (h *Handlers) ImportAccounts(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		redirectWithMessage(w, r, "error", "Bitte eine CSV-Datei auswählen.")
+		redirectWithMessage(w, r, "/settings", "error", "Bitte eine CSV-Datei auswählen.")
 		return
 	}
 	defer file.Close()
@@ -142,11 +141,11 @@ func (h *Handlers) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 	reader.FieldsPerRecord = -1
 	rows, err := reader.ReadAll()
 	if err != nil {
-		redirectWithMessage(w, r, "error", "CSV konnte nicht gelesen werden: "+err.Error())
+		redirectWithMessage(w, r, "/settings", "error", "CSV konnte nicht gelesen werden: "+err.Error())
 		return
 	}
 	if len(rows) < 2 {
-		redirectWithMessage(w, r, "error", "Die CSV-Datei enthält keine Daten (nur Kopfzeile oder leer).")
+		redirectWithMessage(w, r, "/settings", "error", "Die CSV-Datei enthält keine Daten (nur Kopfzeile oder leer).")
 		return
 	}
 
@@ -197,7 +196,7 @@ func (h *Handlers) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 		imported++
 	}
 
-	finishImport(w, r, imported, "Buchung(en)", problems)
+	finishImport(w, r, "/settings", imported, "Buchung(en)", problems)
 }
 
 // parseTransactionRow liest eine CSV-Zeile im Export-Format
@@ -266,15 +265,15 @@ func nullInt64(v *int64) sql.NullInt64 {
 }
 
 // finishImport baut aus Erfolgs-/Fehleranzahl eine verständliche
-// Hinweis-Meldung und leitet zurück zum Dashboard.
-func finishImport(w http.ResponseWriter, r *http.Request, imported int, unit string, problems []string) {
+// Hinweis-Meldung und leitet zur angegebenen Seite zurück.
+func finishImport(w http.ResponseWriter, r *http.Request, path string, imported int, unit string, problems []string) {
 	msg := fmt.Sprintf("%d %s importiert.", imported, unit)
 	if len(problems) == 0 {
-		redirectWithMessage(w, r, "success", msg)
+		redirectWithMessage(w, r, path, "success", msg)
 		return
 	}
 	if len(problems) > 5 {
 		problems = append(problems[:5], "…weitere Fehler gekürzt")
 	}
-	redirectWithMessage(w, r, "error", msg+" Übersprungen: "+strings.Join(problems, " | "))
+	redirectWithMessage(w, r, path, "error", msg+" Übersprungen: "+strings.Join(problems, " | "))
 }

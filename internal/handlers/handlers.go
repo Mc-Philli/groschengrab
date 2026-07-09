@@ -28,6 +28,8 @@ func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
+// Dashboard zeigt die Startseite: Gesamtvermögen, Konten, Buchungsformular
+// und die letzten Buchungen.
 func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 	accounts, err := h.loadAccounts()
 	if err != nil {
@@ -41,21 +43,64 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	categories, err := h.loadCategories()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var totalAssets float64
+	for _, a := range accounts {
+		totalAssets += a.Balance
+	}
+
 	data := struct {
 		Accounts     []models.Account
 		Transactions []models.TransactionView
+		Categories   []models.Category
+		TotalAssets  float64
 		ErrorMsg     string
 		SuccessMsg   string
 		Today        string
+		Page         string
 	}{
 		Accounts:     accounts,
 		Transactions: transactions,
+		Categories:   categories,
+		TotalAssets:  totalAssets,
 		ErrorMsg:     r.URL.Query().Get("error"),
 		SuccessMsg:   r.URL.Query().Get("success"),
 		Today:        time.Now().Format("2006-01-02"),
+		Page:         "home",
 	}
 
-	if err := h.tmpl.ExecuteTemplate(w, "dashboard.html", data); err != nil {
+	if err := h.tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Settings zeigt die Einstellungsseite: Konto anlegen, Kategorien verwalten,
+// Export/Import.
+func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.loadCategories()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Categories []models.Category
+		ErrorMsg   string
+		SuccessMsg string
+		Page       string
+	}{
+		Categories: categories,
+		ErrorMsg:   r.URL.Query().Get("error"),
+		SuccessMsg: r.URL.Query().Get("success"),
+		Page:       "settings",
+	}
+
+	if err := h.tmpl.ExecuteTemplate(w, "settings.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -103,7 +148,26 @@ func (h *Handlers) loadTransactions() ([]models.TransactionView, error) {
 	return list, rows.Err()
 }
 
-// CreateAccount verarbeitet das Formular "Konto anlegen".
+func (h *Handlers) loadCategories() ([]models.Category, error) {
+	rows, err := h.db.Query(`SELECT id, name FROM categories ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.Category
+	for rows.Next() {
+		var c models.Category
+		if err := rows.Scan(&c.ID, &c.Name); err != nil {
+			return nil, err
+		}
+		list = append(list, c)
+	}
+	return list, rows.Err()
+}
+
+// CreateAccount verarbeitet das Formular "Konto anlegen" (liegt auf der
+// Einstellungsseite).
 func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -114,13 +178,13 @@ func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	accountType := r.FormValue("type")
 
 	if name == "" {
-		http.Error(w, "Name darf nicht leer sein", http.StatusBadRequest)
+		redirectWithMessage(w, r, "/settings", "error", "Name darf nicht leer sein.")
 		return
 	}
 
 	startBalance, err := parseAmount(r.FormValue("start_balance"))
 	if err != nil {
-		http.Error(w, "Startsaldo ist ungültig (Zahl mit Komma oder Punkt erwartet)", http.StatusBadRequest)
+		redirectWithMessage(w, r, "/settings", "error", "Startsaldo ist ungültig (Zahl mit Punkt erwartet).")
 		return
 	}
 
@@ -132,7 +196,7 @@ func (h *Handlers) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	redirectWithMessage(w, r, "/settings", "success", "Konto angelegt.")
 }
 
 // transactionRecord bündelt die Rohdaten einer Buchung – wird sowohl vom
@@ -156,19 +220,19 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 
 	accountID, err := strconv.ParseInt(r.FormValue("account_id"), 10, 64)
 	if err != nil {
-		http.Error(w, "Bitte ein Konto auswählen", http.StatusBadRequest)
+		redirectWithMessage(w, r, "/", "error", "Bitte ein Konto auswählen.")
 		return
 	}
 
 	kind := r.FormValue("kind")
 	if kind != "income" && kind != "expense" && kind != "transfer" {
-		http.Error(w, "Ungültige Buchungsart", http.StatusBadRequest)
+		redirectWithMessage(w, r, "/", "error", "Ungültige Buchungsart.")
 		return
 	}
 
 	amount, err := parseAmount(r.FormValue("amount"))
 	if err != nil || amount <= 0 {
-		http.Error(w, "Bitte einen gültigen Betrag größer 0 angeben", http.StatusBadRequest)
+		redirectWithMessage(w, r, "/", "error", "Bitte einen gültigen Betrag größer 0 angeben.")
 		return
 	}
 
@@ -176,11 +240,11 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	if kind == "transfer" {
 		toID, err := strconv.ParseInt(r.FormValue("to_account_id"), 10, 64)
 		if err != nil {
-			http.Error(w, "Bitte ein Zielkonto für den Transfer auswählen", http.StatusBadRequest)
+			redirectWithMessage(w, r, "/", "error", "Bitte ein Zielkonto für den Transfer auswählen.")
 			return
 		}
 		if toID == accountID {
-			http.Error(w, "Quell- und Zielkonto müssen unterschiedlich sein", http.StatusBadRequest)
+			redirectWithMessage(w, r, "/", "error", "Quell- und Zielkonto müssen unterschiedlich sein.")
 			return
 		}
 		toAccountID = sql.NullInt64{Int64: toID, Valid: true}
@@ -210,7 +274,7 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	redirectWithMessage(w, r, "/", "success", "Buchung gespeichert.")
 }
 
 // insertTransactionAndUpdateBalance schreibt eine Buchung und passt je nach
@@ -276,8 +340,8 @@ func (h *Handlers) findOrCreateUser(name string) (int64, error) {
 	return id, nil
 }
 
-// DeleteTransaction löscht eine Buchung und macht ihre Wirkung auf den
-// Kontosaldo rückgängig.
+// DeleteTransaction löscht eine Buchung und macht ihre Wirkung auf den/die
+// Kontosaldo/-salden rückgängig.
 func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -292,7 +356,7 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	err = h.db.QueryRow(`SELECT account_id, to_account_id, amount, kind FROM transactions WHERE id = ?`, id).
 		Scan(&accountID, &toAccountID, &amount, &kind)
 	if err == sql.ErrNoRows {
-		redirectWithMessage(w, r, "error", "Diese Buchung wurde nicht gefunden.")
+		redirectWithMessage(w, r, "/", "error", "Diese Buchung wurde nicht gefunden.")
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -311,7 +375,6 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wirkung der Buchung auf den/die Saldo/Salden umkehren.
 	switch kind {
 	case "expense":
 		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, amount, accountID); err != nil {
@@ -341,11 +404,12 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectWithMessage(w, r, "success", "Buchung gelöscht.")
+	redirectWithMessage(w, r, "/", "success", "Buchung gelöscht.")
 }
 
 // DeleteAccount löscht ein Konto – aber nur, wenn keine Buchungen mehr daran
-// hängen, damit keine verwaisten Daten entstehen.
+// hängen (auch nicht als Transfer-Zielkonto), damit keine verwaisten Daten
+// entstehen.
 func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -354,12 +418,12 @@ func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var count int
-	if err := h.db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE account_id = ?`, id).Scan(&count); err != nil {
+	if err := h.db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE account_id = ? OR to_account_id = ?`, id, id).Scan(&count); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if count > 0 {
-		redirectWithMessage(w, r, "error", fmt.Sprintf(
+		redirectWithMessage(w, r, "/", "error", fmt.Sprintf(
 			"Konto kann nicht gelöscht werden: %d Buchung(en) hängen noch daran. Bitte zuerst diese Buchungen löschen.", count,
 		))
 		return
@@ -370,15 +434,54 @@ func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectWithMessage(w, r, "success", "Konto gelöscht.")
+	redirectWithMessage(w, r, "/", "success", "Konto gelöscht.")
 }
 
-// redirectWithMessage leitet zurück zum Dashboard und hängt eine
+// CreateCategory verarbeitet das Formular "Kategorie anlegen" auf der
+// Einstellungsseite.
+func (h *Handlers) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	name := strings.TrimSpace(r.FormValue("name"))
+	if name == "" {
+		redirectWithMessage(w, r, "/settings", "error", "Name darf nicht leer sein.")
+		return
+	}
+
+	if _, err := h.db.Exec(`INSERT INTO categories (name) VALUES (?)`, name); err != nil {
+		redirectWithMessage(w, r, "/settings", "error", "Kategorie konnte nicht angelegt werden (gibt es sie schon?).")
+		return
+	}
+
+	redirectWithMessage(w, r, "/settings", "success", "Kategorie angelegt.")
+}
+
+// DeleteCategory entfernt eine Kategorie aus der Auswahlliste. Bereits
+// gebuchte Buchungen behalten ihren bisherigen Kategorietext unverändert.
+func (h *Handlers) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Ungültige Kategorie-ID", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := h.db.Exec(`DELETE FROM categories WHERE id = ?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	redirectWithMessage(w, r, "/settings", "success", "Kategorie gelöscht.")
+}
+
+// redirectWithMessage leitet zu der angegebenen Seite zurück und hängt eine
 // Erfolgs- oder Fehlermeldung als URL-Parameter an.
-func redirectWithMessage(w http.ResponseWriter, r *http.Request, kind, message string) {
+func redirectWithMessage(w http.ResponseWriter, r *http.Request, path, kind, message string) {
 	q := url.Values{}
 	q.Set(kind, message)
-	http.Redirect(w, r, "/?"+q.Encode(), http.StatusSeeOther)
+	http.Redirect(w, r, path+"?"+q.Encode(), http.StatusSeeOther)
 }
 
 // parseAmount akzeptiert Schweizer Schreibweise: Punkt als Dezimaltrennzeichen,

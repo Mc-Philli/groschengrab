@@ -1,0 +1,108 @@
+{{define "settings.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Einstellungen – Haushalts-App</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-inner">
+            <h1>🏠 Haushalts-App</h1>
+            <nav>
+                <a href="/" class="{{if eq .Page "home"}}active{{end}}">Start</a>
+                <a href="/settings" class="{{if eq .Page "settings"}}active{{end}}">Einstellungen</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <section class="card">
+            <h2>Neues Konto anlegen</h2>
+            <form method="POST" action="/accounts" class="form-grid">
+                <label>Name<br>
+                    <input type="text" name="name" required>
+                </label>
+                <label>Typ<br>
+                    <select name="type">
+                        <option value="Girokonto">Girokonto</option>
+                        <option value="Sparkonto">Sparkonto</option>
+                        <option value="Bar">Bar</option>
+                        <option value="Depot">Depot</option>
+                        <option value="Sonstiges">Sonstiges</option>
+                    </select>
+                </label>
+                <label>Startsaldo (CHF)<br>
+                    <input type="text" name="start_balance" value="0" placeholder="z. B. 1'000.00">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Konto anlegen</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Kategorien</h2>
+            {{if .Categories}}
+            <ul class="category-list">
+                {{range .Categories}}
+                <li>
+                    <span class="badge">{{.Name}}</span>
+                    <form method="POST" action="/categories/{{.ID}}/delete"
+                          onsubmit="return confirm('Kategorie «{{.Name}}» wirklich löschen?')">
+                        <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                    </form>
+                </li>
+                {{end}}
+            </ul>
+            {{else}}
+            <p class="empty-hint">Noch keine Kategorien angelegt.</p>
+            {{end}}
+
+            <form method="POST" action="/categories" class="form-grid">
+                <label>Neue Kategorie<br>
+                    <input type="text" name="name" placeholder="z. B. Lebensmittel" required>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Kategorie anlegen</button>
+                </div>
+            </form>
+            <p class="hint-text">Kategorien sind die Auswahlliste im Buchungsformular auf der Startseite. Löschen entfernt nur die Auswahlmöglichkeit – bereits erfasste Buchungen behalten ihre Kategorie.</p>
+        </section>
+
+        <section class="card">
+            <h2>Export &amp; Import</h2>
+            <div class="export-links">
+                <a class="btn btn-secondary" href="/export/accounts.csv">⬇️ Konten exportieren</a>
+                <a class="btn btn-secondary" href="/export/transactions.csv">⬇️ Buchungen exportieren</a>
+            </div>
+
+            <div class="import-grid">
+                <form method="POST" action="/import/accounts" enctype="multipart/form-data" class="import-form">
+                    <label>Konten importieren<br>
+                        <input type="file" name="file" accept=".csv" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-small">Importieren</button>
+                </form>
+
+                <form method="POST" action="/import/transactions" enctype="multipart/form-data" class="import-form">
+                    <label>Buchungen importieren<br>
+                        <input type="file" name="file" accept=".csv" required>
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-small">Importieren</button>
+                </form>
+            </div>
+            <p class="hint-text">Das Import-Format entspricht genau dem Export. Am einfachsten: erst exportieren, in Excel/Numbers bearbeiten, dann wieder importieren. Konten beim Buchungs-Import müssen bereits existieren (Zuordnung über den Namen).</p>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
