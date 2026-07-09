@@ -54,11 +54,6 @@ type Category struct {
 	Name string
 }
 
-type Category struct {
-	ID   int64
-	Name string
-}
-
 // TransactionView ist eine für die Anzeige aufbereitete Buchung
 // (Konto- und Nutzername statt nur IDs).
 type TransactionView struct {
