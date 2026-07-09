@@ -1,0 +1,34 @@
+{{define "register.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrieren – Haushalts-App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="auth-page">
+    <section class="card auth-card">
+        <h1>🏠 Registrieren</h1>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        <form method="POST" action="/register" class="form-grid">
+            <label>Name<br>
+                <input type="text" name="name" required autofocus>
+            </label>
+            <label>Passwort<br>
+                <input type="password" name="password" required minlength="6">
+            </label>
+            <label>Passwort wiederholen<br>
+                <input type="password" name="password_confirm" required minlength="6">
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" style="width:100%">Registrieren</button>
+            </div>
+        </form>
+        <p class="auth-switch">Schon ein Konto? <a href="/login">Anmelden</a></p>
+        <p class="hint-text">Tipp: Wenn du vorher schon einen Namen zum Buchen benutzt hast, registriere dich mit genau diesem Namen – deine bisherigen Buchungen bleiben dir dann zugeordnet.</p>
+    </section>
+</body>
+</html>
+{{end}}

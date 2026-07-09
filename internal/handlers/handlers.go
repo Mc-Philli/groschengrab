@@ -55,23 +55,25 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Accounts     []models.Account
-		Transactions []models.TransactionView
-		Categories   []models.Category
-		TotalAssets  float64
-		ErrorMsg     string
-		SuccessMsg   string
-		Today        string
-		Page         string
+		Accounts        []models.Account
+		Transactions    []models.TransactionView
+		Categories      []models.Category
+		TotalAssets     float64
+		ErrorMsg        string
+		SuccessMsg      string
+		Today           string
+		Page            string
+		CurrentUserName string
 	}{
-		Accounts:     accounts,
-		Transactions: transactions,
-		Categories:   categories,
-		TotalAssets:  totalAssets,
-		ErrorMsg:     r.URL.Query().Get("error"),
-		SuccessMsg:   r.URL.Query().Get("success"),
-		Today:        time.Now().Format("2006-01-02"),
-		Page:         "home",
+		Accounts:        accounts,
+		Transactions:    transactions,
+		Categories:      categories,
+		TotalAssets:     totalAssets,
+		ErrorMsg:        r.URL.Query().Get("error"),
+		SuccessMsg:      r.URL.Query().Get("success"),
+		Today:           time.Now().Format("2006-01-02"),
+		Page:            "home",
+		CurrentUserName: currentUser(r).Name,
 	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
@@ -89,15 +91,17 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Categories []models.Category
-		ErrorMsg   string
-		SuccessMsg string
-		Page       string
+		Categories      []models.Category
+		ErrorMsg        string
+		SuccessMsg      string
+		Page            string
+		CurrentUserName string
 	}{
-		Categories: categories,
-		ErrorMsg:   r.URL.Query().Get("error"),
-		SuccessMsg: r.URL.Query().Get("success"),
-		Page:       "settings",
+		Categories:      categories,
+		ErrorMsg:        r.URL.Query().Get("error"),
+		SuccessMsg:      r.URL.Query().Get("success"),
+		Page:            "settings",
+		CurrentUserName: currentUser(r).Name,
 	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "settings.html", data); err != nil {
@@ -255,11 +259,7 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		bookedAt = time.Now().Format("2006-01-02")
 	}
 
-	userID, err := h.findOrCreateUser(r.FormValue("booked_by"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	user := currentUser(r)
 
 	rec := transactionRecord{
 		BookedAt:    bookedAt,
@@ -269,7 +269,7 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		Description: strings.TrimSpace(r.FormValue("description")),
 	}
 
-	if err := h.insertTransactionAndUpdateBalance(accountID, toAccountID, userID, rec); err != nil {
+	if err := h.insertTransactionAndUpdateBalance(accountID, toAccountID, user.ID, rec); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

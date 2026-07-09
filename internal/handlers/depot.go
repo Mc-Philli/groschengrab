@@ -43,6 +43,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		SuccessMsg         string
 		Page               string
 		Today              string
+		CurrentUserName    string
 	}{
 		Holdings:           views,
 		TotalValueCHF:      totalValueCHF,
@@ -51,6 +52,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		SuccessMsg:         r.URL.Query().Get("success"),
 		Page:               "depot",
 		Today:               time.Now().Format("2006-01-02"),
+		CurrentUserName:    currentUser(r).Name,
 	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "depot.html", data); err != nil {
