@@ -23,6 +23,30 @@
         </section>
 
         <section class="card">
+            <h2>Vermögensentwicklung</h2>
+            <div class="period-selector" data-chart="networth">
+                <button type="button" class="period-btn" data-range="1d">1T</button>
+                <button type="button" class="period-btn" data-range="1m">1M</button>
+                <button type="button" class="period-btn active" data-range="3m">3M</button>
+                <button type="button" class="period-btn" data-range="6m">6M</button>
+                <button type="button" class="period-btn" data-range="1y">1J</button>
+                <button type="button" class="period-btn" data-range="max">Max</button>
+            </div>
+            <canvas id="networth-chart" height="280"></canvas>
+        </section>
+
+        <section class="card">
+            <h2>Einnahmen &amp; Ausgaben</h2>
+            <div class="month-selector">
+                <button type="button" id="sankey-prev-month">◀</button>
+                <span id="sankey-month-label"></span>
+                <button type="button" id="sankey-next-month">▶</button>
+            </div>
+            <canvas id="sankey-chart" height="320"></canvas>
+            <p id="sankey-empty-hint" class="empty-hint" style="display:none">Keine Einnahmen oder Ausgaben in diesem Monat.</p>
+        </section>
+
+        <section class="card">
             <h2>Konten</h2>
             {{if .Accounts}}
             <table>
@@ -133,6 +157,9 @@
             {{end}}
         </section>
     </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.0/dist/chartjs-chart-sankey.min.js"></script>
+    <script src="/static/charts.js"></script>
 </body>
 </html>
 {{end}}

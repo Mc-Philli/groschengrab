@@ -59,6 +59,9 @@ func main() {
 	mux.HandleFunc("GET /export/transactions.csv", h.RequireAuth(h.ExportTransactions))
 	mux.HandleFunc("POST /import/accounts", h.RequireAuth(h.ImportAccounts))
 	mux.HandleFunc("POST /import/transactions", h.RequireAuth(h.ImportTransactions))
+	mux.HandleFunc("GET /api/networth-history", h.RequireAuth(h.NetWorthHistory))
+	mux.HandleFunc("GET /api/depot-history", h.RequireAuth(h.DepotHistory))
+	mux.HandleFunc("GET /api/sankey", h.RequireAuth(h.SankeyData))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	addr := ":8080"

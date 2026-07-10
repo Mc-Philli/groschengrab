@@ -380,3 +380,53 @@ tr:hover td {
     font-size: 0.9rem;
     color: var(--text-muted);
 }
+
+.period-selector {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.period-btn {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text-muted);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.period-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+
+.period-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.month-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.month-selector button {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.month-selector button:hover {
+    border-color: var(--primary);
+}
