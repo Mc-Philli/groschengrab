@@ -64,7 +64,13 @@ func main() {
 	mux.HandleFunc("GET /api/sankey", h.RequireAuth(h.SankeyData))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
-	addr := ":8080"
+	// Standardmäßig Port 8080. Für eine zweite Test-Instanz neben dem
+	// produktiven Dienst kann der Port per APP_ADDR überschrieben werden
+	// (zusammen mit APP_DB_PATH für eine eigene Datenbank).
+	addr := os.Getenv("APP_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
 	log.Printf("Server läuft auf %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
