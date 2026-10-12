@@ -1,0 +1,280 @@
+booked_at,kind,account,to_account,amount,category,description,booked_by
+2025-09-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2025-09-02,expense,Test Privatkonto,,91.90,Lebensmittel,Migros,Test-Anna
+2025-09-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2025-09-04,expense,Test Kreditkarte,,29.35,Restaurant,Sushi Bar,Test-Ben
+2025-09-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2025-09-05,expense,Test Privatkonto,,45.68,Lebensmittel,Migros,Test-Anna
+2025-09-06,expense,Test Kreditkarte,,45.90,Lebensmittel,Denner,Test-Anna
+2025-09-07,expense,Test Bargeld,,16.56,,,Test-Ben
+2025-09-09,expense,Test Privatkonto,,105.28,Lebensmittel,Denner,Test-Ben
+2025-09-10,expense,Test Privatkonto,,45.26,Lebensmittel,Denner,Test-Anna
+2025-09-10,expense,Test Kreditkarte,,18.13,Freizeit,Buch,Test-Anna
+2025-09-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2025-09-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2025-09-16,expense,Test Kreditkarte,,45.09,Freizeit,Kino,Test-Anna
+2025-09-20,transfer,Test Privatkonto,Test Kreditkarte,138.47,,Kreditkarte bezahlen,Test-Ben
+2025-09-22,expense,Test Kreditkarte,,203.95,Kleidung,Kleider,Test-Anna
+2025-09-24,expense,Test Privatkonto,,65.72,Lebensmittel,Denner,Test-Ben
+2025-09-24,expense,Test Kreditkarte,,118.60,Restaurant,Sushi Bar,Test-Anna
+2025-09-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2025-09-25,expense,Test Kreditkarte,,118.83,Lebensmittel,Aldi,Test-Anna
+2025-09-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2025-09-28,expense,Test Kreditkarte,,28.29,Lebensmittel,Denner,Test-Ben
+2025-09-28,income,Test Sparkonto,,11.24,Zinsen,Zinsgutschrift,Test-Anna
+2025-10-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2025-10-02,expense,Test Kreditkarte,,58.59,Freizeit,Schwimmbad,Test-Anna
+2025-10-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2025-10-03,expense,Test Kreditkarte,,68.36,Lebensmittel,Migros,Test-Anna
+2025-10-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2025-10-09,expense,Test Kreditkarte,,44.93,Lebensmittel,Aldi,Test-Ben
+2025-10-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2025-10-12,expense,Test Kreditkarte,,36.26,Lebensmittel,Coop,Test-Anna
+2025-10-13,expense,Test Bargeld,,24.06,,Diverses,Test-Ben
+2025-10-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2025-10-19,expense,Test Kreditkarte,,111.35,Lebensmittel,Aldi,Test-Ben
+2025-10-20,transfer,Test Privatkonto,Test Kreditkarte,789.16,,Kreditkarte bezahlen,Test-Ben
+2025-10-23,expense,Test Kreditkarte,,45.76,Lebensmittel,Coop,Test-Ben
+2025-10-23,expense,Test Kreditkarte,,35.88,Restaurant,"Café ""Zur Linde"", Zürich",Test-Ben
+2025-10-24,expense,Test Privatkonto,,112.44,Lebensmittel,Migros,Test-Anna
+2025-10-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2025-10-25,expense,Test Privatkonto,,116.96,Lebensmittel,Aldi,Test-Anna
+2025-10-25,expense,Test Kreditkarte,,35.60,Restaurant,Thai Take-away,Test-Anna
+2025-10-25,expense,Test Kreditkarte,,52.08,Freizeit,Schwimmbad,Test-Anna
+2025-10-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2025-10-26,expense,Test Kreditkarte,,65.94,Lebensmittel,Aldi,Test-Ben
+2025-11-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2025-11-02,expense,Test Kreditkarte,,127.73,Lebensmittel,Denner,Test-Anna
+2025-11-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2025-11-04,expense,Test Kreditkarte,,84.95,Restaurant,Sushi Bar,Test-Anna
+2025-11-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2025-11-05,expense,Test Privatkonto,,48.44,Lebensmittel,Migros,Test-Anna
+2025-11-09,expense,Test Bargeld,,24.62,,,Test-Ben
+2025-11-10,expense,Test Kreditkarte,,20.71,Freizeit,Schwimmbad,Test-Ben
+2025-11-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2025-11-12,expense,Test Kreditkarte,,119.93,Lebensmittel,Coop,Test-Anna
+2025-11-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2025-11-17,expense,Test Kreditkarte,,136.19,Lebensmittel,Coop,Test-Ben
+2025-11-18,expense,Test Kreditkarte,,138.37,Lebensmittel,Coop,Test-Ben
+2025-11-20,transfer,Test Privatkonto,Test Kreditkarte,863.14,,Kreditkarte bezahlen,Test-Ben
+2025-11-21,expense,Test Kreditkarte,,142.20,Lebensmittel,Denner,Test-Ben
+2025-11-24,expense,Test Kreditkarte,,111.01,Restaurant,"Café ""Zur Linde"", Zürich",Test-Anna
+2025-11-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2025-11-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2025-11-26,expense,Test Kreditkarte,,33.54,Lebensmittel,Coop,Test-Anna
+2025-11-28,expense,Test Kreditkarte,,21.11,Lebensmittel,Coop,Test-Anna
+2025-12-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2025-12-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2025-12-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2025-12-05,expense,Test Kreditkarte,,76.55,Lebensmittel,Migros,Test-Anna
+2025-12-06,expense,Test Kreditkarte,,88.52,Kleidung,Kleider,Test-Anna
+2025-12-07,expense,Test Kreditkarte,,25.20,Restaurant,Thai Take-away,Test-Ben
+2025-12-08,expense,Test Privatkonto,,68.55,Lebensmittel,Denner,Test-Anna
+2025-12-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2025-12-13,expense,Test Privatkonto,,42.31,Lebensmittel,Aldi,Test-Anna
+2025-12-14,expense,Test Kreditkarte,,113.02,Restaurant,Thai Take-away,Test-Ben
+2025-12-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2025-12-15,expense,Test Kreditkarte,,41.31,Lebensmittel,Aldi,Test-Anna
+2025-12-17,expense,Test Bargeld,,17.57,,Diverses,Test-Ben
+2025-12-20,income,Test Privatkonto,,3'000.00,Bonus,Weihnachtsbonus,Test-Anna
+2025-12-20,transfer,Test Privatkonto,Test Kreditkarte,652.46,,Kreditkarte bezahlen,Test-Ben
+2025-12-23,expense,Test Privatkonto,,73.58,Lebensmittel,Migros,Test-Anna
+2025-12-24,expense,Test Privatkonto,,138.95,Lebensmittel,Coop,Test-Anna
+2025-12-24,expense,Test Kreditkarte,,17.74,Freizeit,Buch,Test-Anna
+2025-12-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2025-12-25,expense,Test Bargeld,,38.96,Freizeit,Kino,Test-Ben
+2025-12-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2025-12-27,expense,Test Kreditkarte,,78.87,Lebensmittel,Coop,Test-Ben
+2025-12-28,income,Test Sparkonto,,18.23,Zinsen,Zinsgutschrift,Test-Anna
+2026-01-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-01-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-01-03,expense,Test Privatkonto,,102.43,Lebensmittel,Coop,Test-Ben
+2026-01-04,expense,Test Privatkonto,,135.54,Lebensmittel,Coop,Test-Anna
+2026-01-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-01-05,expense,Test Kreditkarte,,31.96,Restaurant,Sushi Bar,Test-Ben
+2026-01-07,expense,Test Privatkonto,,70.61,Lebensmittel,Denner,Test-Ben
+2026-01-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-01-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-01-16,expense,Test Kreditkarte,,40.58,Freizeit,Kino,Test-Ben
+2026-01-18,expense,Test Privatkonto,,101.75,Lebensmittel,Denner,Test-Anna
+2026-01-20,expense,Test Kreditkarte,,37.58,Restaurant,"Café ""Zur Linde"", Zürich",Test-Anna
+2026-01-20,transfer,Test Privatkonto,Test Kreditkarte,206.73,,Kreditkarte bezahlen,Test-Ben
+2026-01-21,expense,Test Kreditkarte,,67.70,Lebensmittel,Denner,Test-Ben
+2026-01-21,expense,Test Kreditkarte,,108.53,Restaurant,"Café ""Zur Linde"", Zürich",Test-Ben
+2026-01-23,expense,Test Bargeld,,7.59,,,Test-Ben
+2026-01-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-01-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-01-26,expense,Test Kreditkarte,,133.98,Lebensmittel,Migros,Test-Anna
+2026-02-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-02-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-02-03,expense,Test Kreditkarte,,28.23,Freizeit,Kino,Test-Ben
+2026-02-04,expense,Test Kreditkarte,,110.87,Restaurant,Pizzeria Roma,Test-Ben
+2026-02-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-02-05,expense,Test Kreditkarte,,53.52,Lebensmittel,Coop,Test-Ben
+2026-02-06,expense,Test Privatkonto,,103.96,Lebensmittel,Denner,Test-Ben
+2026-02-08,expense,Test Bargeld,,22.05,,Diverses,Test-Ben
+2026-02-10,expense,Test Kreditkarte,,131.03,Lebensmittel,Migros,Test-Anna
+2026-02-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-02-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-02-19,expense,Test Kreditkarte,,121.59,Lebensmittel,Migros,Test-Anna
+2026-02-20,transfer,Test Privatkonto,Test Kreditkarte,755.45,,Kreditkarte bezahlen,Test-Ben
+2026-02-24,expense,Test Kreditkarte,,80.34,Restaurant,Sushi Bar,Test-Ben
+2026-02-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-02-25,expense,Test Kreditkarte,,114.35,Lebensmittel,Denner,Test-Anna
+2026-02-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-02-27,expense,Test Kreditkarte,,87.07,Lebensmittel,Aldi,Test-Anna
+2026-03-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-03-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-03-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-03-05,expense,Test Privatkonto,,139.84,Lebensmittel,Coop,Test-Ben
+2026-03-06,expense,Test Privatkonto,,40.79,Lebensmittel,Denner,Test-Ben
+2026-03-07,expense,Test Kreditkarte,,80.16,Restaurant,"Café ""Zur Linde"", Zürich",Test-Anna
+2026-03-09,expense,Test Privatkonto,,51.66,Lebensmittel,Migros,Test-Ben
+2026-03-10,expense,Test Kreditkarte,,35.30,Restaurant,Thai Take-away,Test-Ben
+2026-03-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-03-13,expense,Test Privatkonto,,125.22,Lebensmittel,Coop,Test-Anna
+2026-03-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-03-15,expense,Test Kreditkarte,,61.96,Lebensmittel,Coop,Test-Anna
+2026-03-15,expense,Test Bargeld,,29.26,Freizeit,Schwimmbad,Test-Ben
+2026-03-16,expense,Test Kreditkarte,,153.32,Kleidung,Kleider,Test-Anna
+2026-03-19,expense,Test Privatkonto,,100.54,Lebensmittel,Aldi,Test-Ben
+2026-03-20,transfer,Test Privatkonto,Test Kreditkarte,612.50,,Kreditkarte bezahlen,Test-Ben
+2026-03-21,expense,Test Kreditkarte,,125.94,Lebensmittel,Denner,Test-Ben
+2026-03-21,expense,Test Bargeld,,45.44,Freizeit,Kino,Test-Anna
+2026-03-23,expense,Test Bargeld,,28.02,,,Test-Ben
+2026-03-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-03-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-03-26,expense,Test Kreditkarte,,102.96,Lebensmittel,Denner,Test-Anna
+2026-03-28,income,Test Sparkonto,,15.48,Zinsen,Zinsgutschrift,Test-Anna
+2026-04-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-04-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-04-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-04-05,expense,Test Kreditkarte,,105.16,Lebensmittel,Coop,Test-Anna
+2026-04-09,expense,Test Kreditkarte,,83.07,Restaurant,Pizzeria Roma,Test-Ben
+2026-04-09,expense,Test Bargeld,,42.80,Freizeit,Kino,Test-Anna
+2026-04-11,expense,Test Kreditkarte,,101.15,Lebensmittel,Aldi,Test-Anna
+2026-04-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-04-12,expense,Test Kreditkarte,,68.98,Lebensmittel,Migros,Test-Ben
+2026-04-14,expense,Test Kreditkarte,,20.94,Freizeit,Konzert,Test-Anna
+2026-04-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-04-15,expense,Test Kreditkarte,,44.63,Lebensmittel,Denner,Test-Ben
+2026-04-17,expense,Test Kreditkarte,,64.37,Restaurant,Sushi Bar,Test-Ben
+2026-04-18,expense,Test Kreditkarte,,73.46,Lebensmittel,Coop,Test-Ben
+2026-04-19,expense,Test Bargeld,,11.23,,Diverses,Test-Ben
+2026-04-20,transfer,Test Privatkonto,Test Kreditkarte,790.66,,Kreditkarte bezahlen,Test-Ben
+2026-04-23,expense,Test Privatkonto,,100.40,Lebensmittel,Denner,Test-Ben
+2026-04-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-04-25,expense,Test Privatkonto,,120.23,Lebensmittel,Coop,Test-Ben
+2026-04-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-04-26,expense,Test Privatkonto,,118.76,Lebensmittel,Coop,Test-Anna
+2026-05-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-05-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-05-04,expense,Test Kreditkarte,,63.72,Restaurant,Thai Take-away,Test-Ben
+2026-05-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-05-06,expense,Test Kreditkarte,,136.59,Lebensmittel,Aldi,Test-Ben
+2026-05-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-05-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-05-15,expense,Test Kreditkarte,,30.92,Restaurant,Thai Take-away,Test-Ben
+2026-05-16,expense,Test Kreditkarte,,130.02,Lebensmittel,Aldi,Test-Ben
+2026-05-18,expense,Test Kreditkarte,,111.95,Lebensmittel,Denner,Test-Ben
+2026-05-19,expense,Test Privatkonto,,52.63,Lebensmittel,Migros,Test-Ben
+2026-05-20,transfer,Test Privatkonto,Test Kreditkarte,473.20,,Kreditkarte bezahlen,Test-Ben
+2026-05-23,expense,Test Privatkonto,,52.27,Lebensmittel,Denner,Test-Anna
+2026-05-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-05-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-05-26,expense,Test Kreditkarte,,33.85,Freizeit,Buch,Test-Ben
+2026-05-26,expense,Test Bargeld,,14.75,,,Test-Ben
+2026-05-28,expense,Test Privatkonto,,37.25,Lebensmittel,Aldi,Test-Anna
+2026-06-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-06-02,expense,Test Kreditkarte,,96.16,Restaurant,Pizzeria Roma,Test-Ben
+2026-06-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-06-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-06-05,expense,Test Bargeld,,19.10,,Diverses,Test-Ben
+2026-06-09,expense,Test Privatkonto,,52.43,Lebensmittel,Aldi,Test-Anna
+2026-06-09,expense,Test Bargeld,,51.96,Freizeit,Schwimmbad,Test-Anna
+2026-06-09,expense,Test Kreditkarte,,160.51,Kleidung,Kleider,Test-Anna
+2026-06-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-06-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-06-17,expense,Test Kreditkarte,,60.28,Lebensmittel,Aldi,Test-Anna
+2026-06-17,expense,Test Kreditkarte,,46.30,Restaurant,Pizzeria Roma,Test-Anna
+2026-06-19,expense,Test Kreditkarte,,132.80,Lebensmittel,Migros,Test-Ben
+2026-06-20,transfer,Test Privatkonto,Test Kreditkarte,529.90,,Kreditkarte bezahlen,Test-Ben
+2026-06-21,expense,Test Privatkonto,,28.93,Lebensmittel,Aldi,Test-Anna
+2026-06-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-06-25,expense,Test Kreditkarte,,41.09,Lebensmittel,Denner,Test-Ben
+2026-06-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-06-27,expense,Test Kreditkarte,,44.81,Lebensmittel,Denner,Test-Ben
+2026-06-28,expense,Test Kreditkarte,,53.09,Lebensmittel,Aldi,Test-Ben
+2026-06-28,income,Test Sparkonto,,10.62,Zinsen,Zinsgutschrift,Test-Anna
+2026-07-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-07-02,expense,Test Kreditkarte,,52.55,Freizeit,Schwimmbad,Test-Ben
+2026-07-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-07-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-07-05,expense,Test Kreditkarte,,31.94,Lebensmittel,Migros,Test-Ben
+2026-07-07,expense,Test Kreditkarte,,67.80,Lebensmittel,Coop,Test-Anna
+2026-07-10,expense,Test Privatkonto,,31.17,Lebensmittel,Denner,Test-Anna
+2026-07-10,expense,Test Bargeld,,27.01,,,Test-Ben
+2026-07-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-07-12,expense,Test Bargeld,,27.74,Freizeit,Buch,Test-Ben
+2026-07-13,expense,Test Privatkonto,,61.66,Lebensmittel,Aldi,Test-Ben
+2026-07-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-07-15,expense,Test Kreditkarte,,81.29,Restaurant,"Café ""Zur Linde"", Zürich",Test-Anna
+2026-07-20,transfer,Test Privatkonto,Test Kreditkarte,372.57,,Kreditkarte bezahlen,Test-Ben
+2026-07-21,expense,Test Privatkonto,,81.39,Lebensmittel,Denner,Test-Anna
+2026-07-24,expense,Test Kreditkarte,,120.72,Lebensmittel,Migros,Test-Ben
+2026-07-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-07-25,expense,Test Kreditkarte,,97.50,Lebensmittel,Aldi,Test-Anna
+2026-07-25,expense,Test Kreditkarte,,103.92,Restaurant,Pizzeria Roma,Test-Ben
+2026-07-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-07-26,expense,Test Kreditkarte,,40.39,Lebensmittel,Denner,Test-Ben
+2026-07-28,expense,Test Kreditkarte,,108.75,Restaurant,Sushi Bar,Test-Ben
+2026-08-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-08-02,expense,Test Kreditkarte,,87.51,Lebensmittel,Coop,Test-Ben
+2026-08-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-08-03,expense,Test Kreditkarte,,44.87,Freizeit,Schwimmbad,Test-Ben
+2026-08-04,expense,Test Kreditkarte,,74.21,Lebensmittel,Migros,Test-Anna
+2026-08-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-08-05,expense,Test Bargeld,,26.82,,Diverses,Test-Ben
+2026-08-08,expense,Test Kreditkarte,,46.04,Lebensmittel,Coop,Test-Ben
+2026-08-08,expense,Test Kreditkarte,,53.14,Restaurant,"Café ""Zur Linde"", Zürich",Test-Anna
+2026-08-09,expense,Test Kreditkarte,,77.33,Lebensmittel,Denner,Test-Ben
+2026-08-10,expense,Test Kreditkarte,,62.23,Lebensmittel,Aldi,Test-Ben
+2026-08-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-08-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-08-15,expense,Test Kreditkarte,,49.75,Lebensmittel,Migros,Test-Anna
+2026-08-18,expense,Test Kreditkarte,,33.36,Lebensmittel,Coop,Test-Anna
+2026-08-19,expense,Test Privatkonto,,110.31,Lebensmittel,Denner,Test-Ben
+2026-08-20,transfer,Test Privatkonto,Test Kreditkarte,999.72,,Kreditkarte bezahlen,Test-Ben
+2026-08-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-08-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-08-28,expense,Test Kreditkarte,,53.72,Restaurant,Sushi Bar,Test-Ben
+2026-09-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-09-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-09-03,expense,Test Kreditkarte,,32.68,Lebensmittel,Migros,Test-Ben
+2026-09-04,expense,Test Bargeld,,56.20,Freizeit,Schwimmbad,Test-Ben
+2026-09-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-09-07,expense,Test Kreditkarte,,27.71,Lebensmittel,Migros,Test-Anna
+2026-09-07,expense,Test Bargeld,,24.82,,,Test-Ben
+2026-09-09,expense,Test Kreditkarte,,92.14,Kleidung,Kleider,Test-Anna
+2026-09-10,expense,Test Privatkonto,,119.32,Lebensmittel,Denner,Test-Anna
+2026-09-11,expense,Test Privatkonto,,33.22,Lebensmittel,Aldi,Test-Anna
+2026-09-12,transfer,Test Privatkonto,Test Bargeld,200.00,,Bargeld abheben,Test-Ben
+2026-09-12,expense,Test Kreditkarte,,74.50,Lebensmittel,Aldi,Test-Ben
+2026-09-15,income,Test Privatkonto,,800.00,Nebenjob,Nebenjob Ben,Test-Ben
+2026-09-15,expense,Test Kreditkarte,,90.49,Restaurant,Thai Take-away,Test-Ben
+2026-09-16,expense,Test Kreditkarte,,56.46,Lebensmittel,Migros,Test-Anna
+2026-09-16,expense,Test Kreditkarte,,28.10,Restaurant,"Café ""Zur Linde"", Zürich",Test-Ben
+2026-09-17,expense,Test Privatkonto,,96.25,Lebensmittel,Denner,Test-Anna
+2026-09-20,transfer,Test Privatkonto,Test Kreditkarte,455.80,,Kreditkarte bezahlen,Test-Ben
+2026-09-23,expense,Test Bargeld,,37.23,Freizeit,Schwimmbad,Test-Ben
+2026-09-25,income,Test Privatkonto,,6'500.00,Lohn,Lohn Anna,Test-Anna
+2026-09-26,transfer,Test Privatkonto,Test Sparkonto,500.00,,Sparen,Test-Anna
+2026-09-27,expense,Test Privatkonto,,48.32,Lebensmittel,Migros,Test-Anna
+2026-09-28,income,Test Sparkonto,,15.14,Zinsen,Zinsgutschrift,Test-Anna
+2026-10-01,expense,Test Privatkonto,,1'850.00,Wohnen,Miete,Test-Anna
+2026-10-03,expense,Test Privatkonto,,"85,00",Transport,ÖV-Abo,Test-Ben
+2026-10-03,expense,Test Kreditkarte,,41.13,Freizeit,Konzert,Test-Ben
+2026-10-05,expense,Test Privatkonto,,385.40,Versicherung,Krankenkasse,Test-Anna
+2026-10-05,expense,Test Kreditkarte,,72.91,Lebensmittel,Migros,Test-Ben
+2026-10-08,expense,Test Bargeld,,20.18,Freizeit,Schwimmbad,Test-Ben
+2026-10-10,expense,Test Kreditkarte,,93.54,Lebensmittel,Migros,Test-Anna

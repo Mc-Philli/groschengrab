@@ -1,0 +1,8 @@
+booked_at,kind,account,to_account,amount,category,description,booked_by
+2026-10-01,expense,Test Privatkonto,,1.00,Test,Testzeile gültig,Test-Anna
+2026-10-02,expense,Test Gibtsnicht,,10.00,Test,Konto unbekannt,Test-Anna
+2026-10-02,gutschrift,Test Privatkonto,,10.00,Test,Ungültige Art,Test-Anna
+2026-10-02,expense,Test Privatkonto,,-5.00,Test,Negativer Betrag,Test-Anna
+2026-10-02,expense,Test Privatkonto,,abc,Test,Betrag keine Zahl,Test-Anna
+2026-10-02,transfer,Test Privatkonto,Test Gibtsnicht,10.00,,Zielkonto unbekannt,Test-Anna
+2026-10-02,expense,Test Privatkonto,,10.00
