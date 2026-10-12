@@ -70,6 +70,14 @@ type Category struct {
 	Name string
 }
 
+// CategoryRule ordnet Buchungen anhand eines Stichworts automatisch einer
+// Kategorie zu (z. B. "Lidl" -> "Lebensmittel").
+type CategoryRule struct {
+	ID       int64
+	Keyword  string
+	Category string
+}
+
 // TransactionView ist eine für die Anzeige aufbereitete Buchung
 // (Konto- und Nutzername statt nur IDs).
 type TransactionView struct {

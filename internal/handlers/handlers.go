@@ -90,14 +90,30 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accounts, err := h.loadAccounts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rules, err := h.loadRules()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	data := struct {
 		Categories      []models.Category
+		Accounts        []models.Account
+		Rules           []models.CategoryRule
 		ErrorMsg        string
 		SuccessMsg      string
 		Page            string
 		CurrentUserName string
 	}{
 		Categories:      categories,
+		Accounts:        accounts,
+		Rules:           rules,
 		ErrorMsg:        r.URL.Query().Get("error"),
 		SuccessMsg:      r.URL.Query().Get("success"),
 		Page:            "settings",
@@ -287,10 +303,25 @@ func (h *Handlers) insertTransactionAndUpdateBalance(accountID int64, toAccountI
 	}
 	defer tx.Rollback()
 
+	if err := insertTransactionTx(tx, accountID, toAccountID, userID, rec, ""); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// insertTransactionTx schreibt eine Buchung innerhalb einer bereits offenen
+// Datenbank-Transaktion und passt die Kontosalden an. importHash ist bei
+// importierten Buchungen ein eindeutiger Fingerabdruck (Duplikaterkennung),
+// sonst leer. Hinweis: Innerhalb der Transaktion dürfen keine Abfragen über
+// h.db laufen, da die Datenbank nur eine Verbindung zulässt.
+func insertTransactionTx(tx *sql.Tx, accountID int64, toAccountID sql.NullInt64, userID int64, rec transactionRecord, importHash string) error {
+	hash := sql.NullString{String: importHash, Valid: importHash != ""}
+
 	if _, err := tx.Exec(
-		`INSERT INTO transactions (account_id, to_account_id, user_id, amount, booked_at, category, description, kind)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		accountID, toAccountID, userID, rec.Amount, rec.BookedAt, rec.Category, rec.Description, rec.Kind,
+		`INSERT INTO transactions (account_id, to_account_id, user_id, amount, booked_at, category, description, kind, import_hash)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		accountID, toAccountID, userID, rec.Amount, rec.BookedAt, rec.Category, rec.Description, rec.Kind, hash,
 	); err != nil {
 		return err
 	}
@@ -313,7 +344,7 @@ func (h *Handlers) insertTransactionAndUpdateBalance(accountID int64, toAccountI
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // findOrCreateUser sucht einen Nutzer per Name oder legt ihn ohne Passwort an.
