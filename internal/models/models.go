@@ -63,6 +63,8 @@ type OtherAsset struct {
 	Name         string
 	Type         string
 	CurrentValue float64
+	UpdatedAt    string // Stichtag der jüngsten Bewertung (YYYY-MM-DD)
+	IsDebt       bool   // Schulden werden vom Vermögen abgezogen
 }
 
 type Category struct {
@@ -81,13 +83,13 @@ type CategoryRule struct {
 // TransactionView ist eine für die Anzeige aufbereitete Buchung
 // (Konto- und Nutzername statt nur IDs).
 type TransactionView struct {
-	ID          int64
-	AccountName string
+	ID            int64
+	AccountName   string
 	ToAccountName string // nur bei Transfers gefüllt
-	UserName    string
-	Amount      float64
-	BookedAt    string
-	Category    string
-	Description string
-	Kind        string
+	UserName      string
+	Amount        float64
+	BookedAt      string
+	Category      string
+	Description   string
+	Kind          string
 }

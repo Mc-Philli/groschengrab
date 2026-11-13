@@ -26,7 +26,7 @@ Danach im Browser `http://<pi-ip>:8081` öffnen. Mit `Strg+C` beenden, die Datei
 
 ## Ablauf
 
-1. In der Test-Instanz unter `/register` einen Nutzer anlegen, z. B. `Tester`.
+1. In der Test-Instanz unter `/register` einen Nutzer anlegen, z. B. `Tester`. Eine neue Datenbank enthält bereits die Standard-Konten „Privatkonto", „Sparkonto" und „Bargeld" (Saldo jeweils 0). Sie stören die Sollwerte nicht und können bleiben.
 2. Einstellungen → Konten importieren → `accounts.csv`.
 3. Einstellungen → Buchungen importieren → `transactions.csv`. Erwartet: **279 Buchung(en) importiert**, keine Fehlermeldung.
 4. Prüfen (siehe unten).
@@ -137,7 +137,3 @@ Danach darf sich außer der einen gültigen Buchung nichts verändert haben: Pri
 **Diagramme**
 - [ ] Vermögensverlauf: alle sechs Zeiträume, Werte wie oben
 - [ ] Sankey: Monat zurückblättern bis vor September 2025 (leer, Hinweistext) und vorwärts bis in die Zukunft
-
-## Yuh-Import (Einstellungen → Yuh-Import)
-
-`yuh_beispiel.csv` ist ein **erfundener** Beispielexport im Yuh-Format. Auf ein Testkonto importieren. Erwartet: **4 Buchung(en) importiert (davon 1 Depot-Kauf)**, Hinweise zu Bonus (kein CHF-Betrag), EUR-Zeile und ungültigem Datum (31/02). Zweiter Import derselben Datei: 0 neue, 4 bereits vorhanden. Es entsteht das Konto „Yuh Anlagen" und eine Depot-Position `TEST.SW`/`TEST`.

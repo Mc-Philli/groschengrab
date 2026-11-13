@@ -27,8 +27,9 @@ func main() {
 	}
 
 	tmpl, err := template.New("").Funcs(template.FuncMap{
-		"chf":   handlers.FormatCHF,
-		"txchf": handlers.FormatTransactionAmount,
+		"chf":       handlers.FormatCHF,
+		"txchf":     handlers.FormatTransactionAmount,
+		"assetType": handlers.AssetTypeLabel,
 	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)
@@ -55,11 +56,14 @@ func main() {
 	mux.HandleFunc("POST /categories/{id}/delete", h.RequireAuth(h.DeleteCategory))
 	mux.HandleFunc("POST /holdings", h.RequireAuth(h.CreateHolding))
 	mux.HandleFunc("POST /holdings/{id}/delete", h.RequireAuth(h.DeleteHolding))
+	mux.HandleFunc("GET /assets", h.RequireAuth(h.Assets))
+	mux.HandleFunc("POST /assets", h.RequireAuth(h.CreateAsset))
+	mux.HandleFunc("POST /assets/{id}/value", h.RequireAuth(h.UpdateAssetValue))
+	mux.HandleFunc("POST /assets/{id}/delete", h.RequireAuth(h.DeleteAsset))
 	mux.HandleFunc("GET /export/accounts.csv", h.RequireAuth(h.ExportAccounts))
 	mux.HandleFunc("GET /export/transactions.csv", h.RequireAuth(h.ExportTransactions))
 	mux.HandleFunc("POST /import/accounts", h.RequireAuth(h.ImportAccounts))
 	mux.HandleFunc("POST /import/transactions", h.RequireAuth(h.ImportTransactions))
-	mux.HandleFunc("POST /import/yuh", h.RequireAuth(h.ImportYuh))
 	mux.HandleFunc("POST /rules", h.RequireAuth(h.CreateRule))
 	mux.HandleFunc("POST /rules/{id}/delete", h.RequireAuth(h.DeleteRule))
 	mux.HandleFunc("GET /api/networth-history", h.RequireAuth(h.NetWorthHistory))

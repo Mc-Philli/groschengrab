@@ -121,10 +121,17 @@ func (h *Handlers) computeNetWorthHistory(start time.Time) ([]ChartPoint, error)
 		dates = []string{today.Format("2006-01-02")}
 	}
 
+	// Sonstige Assets (Immobilie, Säule 3a, Schulden, ...) je Tag mit ihrer
+	// zu diesem Zeitpunkt gültigen Bewertung.
+	assetValues, err := h.assetValuesByDate(dates)
+	if err != nil {
+		return nil, err
+	}
+
 	points := make([]ChartPoint, len(dates))
 	var futureEffect float64
 	for i := len(dates) - 1; i >= 0; i-- {
-		points[i] = ChartPoint{Label: dates[i], Value: currentTotal - futureEffect}
+		points[i] = ChartPoint{Label: dates[i], Value: currentTotal - futureEffect + assetValues[i]}
 		futureEffect += effectByDate[dates[i]]
 	}
 

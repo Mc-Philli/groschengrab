@@ -430,3 +430,18 @@ tr:hover td {
 .month-selector button:hover {
     border-color: var(--primary);
 }
+
+/* Kompaktes Formular innerhalb einer Tabellenzeile (z. B. Asset-Wert) */
+.inline-form {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.inline-form input {
+    padding: 0.3rem 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font: inherit;
+}

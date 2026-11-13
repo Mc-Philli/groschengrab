@@ -20,6 +20,9 @@
         <section class="card total-assets-card">
             <div class="total-assets-label">Total Vermögen</div>
             <div class="total-assets-value">{{chf .TotalAssets}}</div>
+            {{if .OtherAssetsTotal}}
+            <p class="hint-text">Konten {{chf .AccountsTotal}} · <a href="/assets">Sonstige Assets</a> {{chf .OtherAssetsTotal}}</p>
+            {{end}}
         </section>
 
         <section class="card">

@@ -51,7 +51,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		ErrorMsg:           r.URL.Query().Get("error"),
 		SuccessMsg:         r.URL.Query().Get("success"),
 		Page:               "depot",
-		Today:               time.Now().Format("2006-01-02"),
+		Today:              time.Now().Format("2006-01-02"),
 		CurrentUserName:    currentUser(r).Name,
 	}
 

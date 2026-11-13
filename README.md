@@ -77,17 +77,19 @@ deploy/           systemd-Unit + Einrichtungsskript für den Pi
 
 ## Aktueller Stand & nächste Schritte
 
-Aktuell enthält das Projekt: Datenbankschema (Nutzer, Konten, Buchungen,
-Kassenzettel, Wertpapier-Depot, sonstige Assets) und eine erste Dashboard-Seite
-mit Konten-Übersicht. Als Nächstes sinnvoll, in dieser Reihenfolge:
+Fertig:
 
-1. Login/Mehrbenutzer-Verwaltung
-2. Formulare zum manuellen Erfassen von Ein-/Ausgaben
-3. Aktien/ETF-Depot mit Kursabfrage (Yahoo-Finance-Endpoint, den auch die
-   Python-Bibliothek `yfinance` intern nutzt)
-4. Sonstige Assets erfassen
-5. Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
-   einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich
-   in der Oberfläche, bevor gebucht wird
+- Login/Mehrbenutzer (bcrypt + Sessions)
+- Konten, Buchungen, Umbuchungen, Kategorien und Kategorie-Regeln
+- CSV-Export/-Import
+- Aktien/ETF-Depot mit Kursabfrage (Yahoo Finance)
+- Sonstige Assets (Immobilie, Fahrzeug, Säule 3a, Bargeld, Schulden, …)
+  mit Wertverlauf; fließen ins Total Vermögen und in die Vermögensentwicklung ein
+- Diagramme: Vermögens- und Depotverlauf, Sankey Einnahmen/Ausgaben
 
-Sag Bescheid, mit welchem der Punkte ich weitermachen soll.
+Offen:
+
+- Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
+  einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich
+  in der Oberfläche, bevor gebucht wird
+- Depot-Wert ins Total Vermögen einrechnen
