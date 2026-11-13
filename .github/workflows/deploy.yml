@@ -17,7 +17,7 @@ jobs:
       - name: Go einrichten
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.26'
 
       - name: Abhängigkeiten laden
         run: go mod tidy
@@ -30,6 +30,17 @@ jobs:
       - name: Binary bauen
         run: go build -o household-app-new ./cmd/server
 
+      - name: Backup vor dem Update
+        # Sicherung, bevor neue Migrationen die Datenbank verändern. Schlägt
+        # das Backup fehl, wird nicht deployt. Beim allerersten Deploy (noch
+        # keine Datenbank / kein Skript) wird der Schritt übersprungen.
+        run: |
+          if [ -x /opt/household-app/backup.sh ] && [ -f /opt/household-app/data/app.db ]; then
+            /opt/household-app/backup.sh
+          else
+            echo "Kein Backup-Skript oder noch keine Datenbank – übersprungen."
+          fi
+
       - name: Laufenden Dienst stoppen
         run: sudo systemctl stop household-app
 
@@ -38,6 +49,7 @@ jobs:
           mv household-app-new /opt/household-app/household-app
           cp -r migrations /opt/household-app/
           cp -r web /opt/household-app/
+          cp deploy/backup.sh deploy/restore-backup.sh /opt/household-app/
 
       - name: Dienst starten
         run: sudo systemctl start household-app

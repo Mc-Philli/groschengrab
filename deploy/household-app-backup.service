@@ -1,0 +1,12 @@
+[Unit]
+Description=Haushalts-App: Datenbank-Backup
+
+[Service]
+Type=oneshot
+ExecStart=/opt/household-app/backup.sh
+Environment=APP_DB_PATH=/opt/household-app/data/app.db
+Environment=BACKUP_DIR=/opt/household-app/backups
+Environment=BACKUP_KEEP_DAYS=30
+# Wird von deploy/setup-backup.sh automatisch auf den echten Benutzernamen gesetzt
+User=pi
+Nice=10

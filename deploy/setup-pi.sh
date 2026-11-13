@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "== Haushalts-App: Grundinstallation auf dem Pi =="
 
 sudo apt-get update
-sudo apt-get install -y tesseract-ocr tesseract-ocr-deu golang git
+sudo apt-get install -y tesseract-ocr tesseract-ocr-deu golang git sqlite3
 
 sudo mkdir -p /opt/household-app/data
 sudo chown -R "$USER":"$USER" /opt/household-app
@@ -24,5 +24,8 @@ sudo cp "$SCRIPT_DIR/household-app.service" /etc/systemd/system/household-app.se
 sudo sed -i "s/^User=.*/User=$RUNNER_USER/" /etc/systemd/system/household-app.service
 sudo systemctl daemon-reload
 sudo systemctl enable household-app
+
+echo "== Nächtliches Datenbank-Backup einrichten =="
+"$SCRIPT_DIR/setup-backup.sh"
 
 echo "Fertig. Nächster Schritt: GitHub-Actions-Runner registrieren (siehe README.md)."
