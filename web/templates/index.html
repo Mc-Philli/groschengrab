@@ -20,6 +20,12 @@
         <section class="card total-assets-card">
             <div class="total-assets-label">Total Vermögen</div>
             <div class="total-assets-value">{{chf .TotalAssets}}</div>
+            {{if or .OtherAssetsTotal .DepotTotal}}
+            <p class="hint-text">Konten {{chf .AccountsTotal}}{{if .DepotTotal}} · <a href="/depot">Depot</a> {{chf .DepotTotal}}{{end}}{{if .OtherAssetsTotal}} · <a href="/assets">Sonstige Assets</a> {{chf .OtherAssetsTotal}}{{end}}</p>
+            {{end}}
+            {{if .DepotMissing}}
+            <p class="hint-text">⚠️ Für {{.DepotMissing}} Depot-Position(en) ist gerade kein Kurs verfügbar – sie fehlen in der Summe.</p>
+            {{end}}
         </section>
 
         <section class="card">

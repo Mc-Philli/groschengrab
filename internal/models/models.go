@@ -38,24 +38,66 @@ type Holding struct {
 	ID            int64
 	Ticker        string
 	Quantity      float64
-	PurchasePrice float64
+	PurchasePrice float64 // pro Stück, in der Notierungswährung des Tickers
 	PurchaseDate  string
+	Depot         string // z. B. "Saxo", "WillBe"; leer = keinem Depot zugeordnet
+	Name          string // optionaler Anzeigename, z. B. "Vanguard FTSE All-World"
+	Source        string // "manual", "savings_plan" oder "correction"
+	SavingsPlanID *int64
 }
 
-// HoldingView ist eine Depot-Position mit live abgefragtem Kurs.
-type HoldingView struct {
-	ID             int64
+// PositionView fasst alle Tranchen (Käufe) eines Tickers in einem Depot zu
+// einer Position zusammen, mit live abgefragtem Kurs.
+type PositionView struct {
+	Depot          string
 	Ticker         string
+	Name           string
 	Quantity       float64
-	PurchasePrice  float64
-	PurchaseDate   string
+	CostBasis      float64 // Summe Anzahl × Kaufpreis (Notierungswährung)
+	AvgPrice       float64
+	Lots           []Holding
 	PriceAvailable bool
 	CurrentPrice   float64
 	Currency       string
-	PurchaseValue  float64
-	CurrentValue   float64
-	GainAbsolute   float64
+	CurrentValue   float64 // Notierungswährung
+	GainAbsolute   float64 // Notierungswährung
 	GainPercent    float64
+	FXAvailable    bool
+	ValueCHF       float64
+	GainCHF        float64
+}
+
+// DepotView ist ein Depot (z. B. Saxo) mit seinen Positionen.
+type DepotView struct {
+	Name      string
+	Positions []PositionView
+	ValueCHF  float64
+	GainCHF   float64
+	Missing   int // Positionen ohne Kurs oder Wechselkurs (nicht im Wert enthalten)
+}
+
+// SavingsPlan ist ein Sparplan: fester CHF-Betrag pro Monat, aufgeteilt auf
+// mehrere ETFs.
+type SavingsPlan struct {
+	ID             int64
+	Depot          string
+	Amount         float64
+	DayOfMonth     int
+	StartDate      string
+	AccountID      *int64
+	AccountName    string
+	UserID         int64
+	Active         bool
+	LastExecutedOn string
+	LastError      string
+	NextDue        string
+	Items          []SavingsPlanItem
+}
+
+type SavingsPlanItem struct {
+	Ticker string
+	Name   string
+	Weight float64 // Prozent
 }
 
 type OtherAsset struct {
@@ -63,6 +105,8 @@ type OtherAsset struct {
 	Name         string
 	Type         string
 	CurrentValue float64
+	UpdatedAt    string // Stichtag der jüngsten Bewertung (YYYY-MM-DD)
+	IsDebt       bool   // Schulden werden vom Vermögen abgezogen
 }
 
 type Category struct {
@@ -81,13 +125,13 @@ type CategoryRule struct {
 // TransactionView ist eine für die Anzeige aufbereitete Buchung
 // (Konto- und Nutzername statt nur IDs).
 type TransactionView struct {
-	ID          int64
-	AccountName string
+	ID            int64
+	AccountName   string
 	ToAccountName string // nur bei Transfers gefüllt
-	UserName    string
-	Amount      float64
-	BookedAt    string
-	Category    string
-	Description string
-	Kind        string
+	UserName      string
+	Amount        float64
+	BookedAt      string
+	Category      string
+	Description   string
+	Kind          string
 }

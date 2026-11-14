@@ -1,0 +1,93 @@
+{{define "assets.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Sonstige Assets – Haushalts-App</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <section class="card total-assets-card">
+            <div class="total-assets-label">Sonstige Assets (netto)</div>
+            <div class="total-assets-value">{{chf .Total}}</div>
+            {{if .DebtTotal}}
+            <p class="hint-text">Werte {{chf .PositiveTotal}} · abzüglich Schulden {{chf .DebtTotal}}</p>
+            {{end}}
+            <p class="hint-text">Fließt ins „Total Vermögen" auf der Startseite ein.</p>
+        </section>
+
+        <section class="card">
+            <h2>Übersicht</h2>
+            {{if .Assets}}
+            <table>
+                <tr>
+                    <th>Bezeichnung</th><th>Art</th><th>Wert</th><th>Stand per</th>
+                    <th>Neuer Wert</th><th></th>
+                </tr>
+                {{range .Assets}}
+                <tr>
+                    <td>{{.Name}}</td>
+                    <td>{{assetType .Type}}</td>
+                    <td class="{{if .IsDebt}}amount-expense{{end}}">{{if .IsDebt}}−{{end}}{{chf .CurrentValue}}</td>
+                    <td>{{.UpdatedAt}}</td>
+                    <td>
+                        <form method="POST" action="/assets/{{.ID}}/value" class="inline-form">
+                            <input type="text" name="value" placeholder="Wert" inputmode="decimal" required size="9">
+                            <input type="date" name="valued_at" value="{{$.Today}}" max="{{$.Today}}">
+                            <button type="submit" class="btn btn-small">Speichern</button>
+                        </form>
+                    </td>
+                    <td class="col-action">
+                        <form method="POST" action="/assets/{{.ID}}/delete"
+                              onsubmit="return confirm('Asset «{{.Name}}» samt Wertverlauf wirklich löschen?')">
+                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        </form>
+                    </td>
+                </tr>
+                {{end}}
+            </table>
+            <p class="hint-text">Ein neuer Wert mit älterem Datum wird als Nachtrag gespeichert und ändert nur den Verlauf, nicht den aktuellen Wert.</p>
+            {{else}}
+            <p class="empty-hint">Noch keine sonstigen Assets erfasst.</p>
+            {{end}}
+        </section>
+
+        <section class="card">
+            <h2>Asset hinzufügen</h2>
+            <form method="POST" action="/assets" class="form-grid">
+                <label>Bezeichnung<br>
+                    <input type="text" name="name" placeholder="z. B. Säule 3a VIAC, Auto, Hypothek" required>
+                </label>
+                <label>Art<br>
+                    <select name="type" required>
+                        {{range .AssetTypes}}
+                        <option value="{{.Key}}">{{.Label}}</option>
+                        {{end}}
+                    </select>
+                </label>
+                <label>Wert in CHF<br>
+                    <input type="text" name="value" placeholder="z. B. 25000" inputmode="decimal" required>
+                </label>
+                <label>Stand per<br>
+                    <input type="date" name="valued_at" value="{{.Today}}" max="{{.Today}}">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                </div>
+            </form>
+            <p class="hint-text">Schulden (Hypothek, Kredit) als positiven Betrag eintragen, sie werden automatisch abgezogen. Mit „Stand per" kannst du einen früheren Stichtag angeben, ab dem das Asset in der Vermögensentwicklung erscheint.</p>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"household-app/internal/models"
 	"household-app/internal/stocks"
 )
 
@@ -121,18 +122,31 @@ func (h *Handlers) computeNetWorthHistory(start time.Time) ([]ChartPoint, error)
 		dates = []string{today.Format("2006-01-02")}
 	}
 
+	// Sonstige Assets (Immobilie, Säule 3a, Schulden, ...) je Tag mit ihrer
+	// zu diesem Zeitpunkt gültigen Bewertung.
+	assetValues, err := h.assetValuesByDate(dates)
+	if err != nil {
+		return nil, err
+	}
+
+	// Depot je Tag (in CHF) zum damaligen Kurs und Wechselkurs.
+	depotValues, err := h.depotValuesByDate(dates)
+	if err != nil {
+		return nil, err
+	}
+
 	points := make([]ChartPoint, len(dates))
 	var futureEffect float64
 	for i := len(dates) - 1; i >= 0; i-- {
-		points[i] = ChartPoint{Label: dates[i], Value: currentTotal - futureEffect}
+		points[i] = ChartPoint{Label: dates[i], Value: currentTotal - futureEffect + assetValues[i] + depotValues[i]}
 		futureEffect += effectByDate[dates[i]]
 	}
 
 	return points, nil
 }
 
-// DepotHistory liefert die Wertentwicklung des Depots (nur CHF-Positionen)
-// für den angefragten Zeitraum, basierend auf historischen Kursen je Ticker.
+// DepotHistory liefert die Wertentwicklung aller Depots in CHF für den
+// angefragten Zeitraum, basierend auf historischen Kursen und Wechselkursen.
 func (h *Handlers) DepotHistory(w http.ResponseWriter, r *http.Request) {
 	uiRange := r.URL.Query().Get("range")
 	if uiRange == "" {
@@ -146,54 +160,18 @@ func (h *Handlers) DepotHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tickers := map[string]bool{}
-	for _, hd := range holdings {
-		tickers[hd.Ticker] = true
-	}
+	series := loadTickerSeries(holdings, func(t string) (stocks.Series, string, error) {
+		return stocks.SeriesFor(t, yahooRange, yahooInterval)
+	}, func(cur string) (stocks.Series, float64, bool, error) {
+		return stocks.CHFRateSeries(cur, yahooRange, yahooInterval)
+	})
 
-	type tickerResult struct {
-		ticker   string
-		points   []stocks.HistoryPoint
-		currency string
-		err      error
-	}
-
-	results := make([]tickerResult, 0, len(tickers))
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	for ticker := range tickers {
-		wg.Add(1)
-		go func(ticker string) {
-			defer wg.Done()
-			points, currency, err := stocks.GetHistory(ticker, yahooRange, yahooInterval)
-			mu.Lock()
-			results = append(results, tickerResult{ticker: ticker, points: points, currency: currency, err: err})
-			mu.Unlock()
-		}(ticker)
-	}
-	wg.Wait()
-
-	priceByTickerLabel := map[string]map[string]float64{}
-	currencyByTicker := map[string]string{}
 	labelSet := map[string]bool{}
-	var hasForeignCurrency bool
-
-	for _, res := range results {
-		if res.err != nil {
-			continue // Ticker ohne verfügbare Historie wird einfach ausgelassen
+	for _, ts := range series {
+		for _, l := range ts.prices.Labels {
+			labelSet[l] = true
 		}
-		currencyByTicker[res.ticker] = res.currency
-		if res.currency != "" && res.currency != "CHF" {
-			hasForeignCurrency = true
-		}
-		m := map[string]float64{}
-		for _, p := range res.points {
-			m[p.Label] = p.Close
-			labelSet[p.Label] = true
-		}
-		priceByTickerLabel[res.ticker] = m
 	}
-
 	labels := make([]string, 0, len(labelSet))
 	for l := range labelSet {
 		labels = append(labels, l)
@@ -202,31 +180,113 @@ func (h *Handlers) DepotHistory(w http.ResponseWriter, r *http.Request) {
 
 	points := make([]ChartPoint, 0, len(labels))
 	for _, label := range labels {
-		datePart := label
-		if len(label) > 10 {
-			datePart = label[:10]
-		}
-		var total float64
-		for _, hd := range holdings {
-			if currencyByTicker[hd.Ticker] != "CHF" {
-				continue
-			}
-			if hd.PurchaseDate > datePart {
-				continue
-			}
-			price, ok := priceByTickerLabel[hd.Ticker][label]
-			if !ok {
-				continue
-			}
-			total += hd.Quantity * price
-		}
-		points = append(points, ChartPoint{Label: label, Value: total})
+		points = append(points, ChartPoint{Label: label, Value: depotValueAt(holdings, series, label)})
 	}
 
 	respondJSON(w, struct {
 		Points             []ChartPoint `json:"points"`
 		HasForeignCurrency bool         `json:"hasForeignCurrency"`
-	}{Points: points, HasForeignCurrency: hasForeignCurrency})
+	}{Points: points, HasForeignCurrency: missingSeries(holdings, series)})
+}
+
+// tickerSeries enthält Kurs- und CHF-Faktor-Reihe eines Tickers.
+type tickerSeries struct {
+	prices      stocks.Series
+	rates       stocks.Series
+	constant    float64
+	ratesSeries bool
+}
+
+// loadTickerSeries lädt Kurs- und Wechselkursreihen aller Ticker parallel.
+// Ticker ohne verfügbare Daten fehlen in der Ergebnis-Map.
+func loadTickerSeries(holdings []models.Holding,
+	prices func(ticker string) (stocks.Series, string, error),
+	rates func(currency string) (stocks.Series, float64, bool, error),
+) map[string]tickerSeries {
+	result := map[string]tickerSeries{}
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, t := range tickerSuggestions(holdings) {
+		wg.Add(1)
+		go func(t string) {
+			defer wg.Done()
+			ps, cur, err := prices(t)
+			if err != nil {
+				return
+			}
+			rs, constant, isSeries, err := rates(cur)
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			result[t] = tickerSeries{prices: ps, rates: rs, constant: constant, ratesSeries: isSeries}
+			mu.Unlock()
+		}(t)
+	}
+	wg.Wait()
+	return result
+}
+
+// depotValueAt berechnet den Depotwert in CHF zu einem Zeitpunkt. Es zählen
+// nur Tranchen, die zu diesem Zeitpunkt schon gekauft waren.
+func depotValueAt(holdings []models.Holding, series map[string]tickerSeries, label string) float64 {
+	datePart := label
+	if len(label) > 10 {
+		datePart = label[:10]
+	}
+	var total float64
+	for _, hd := range holdings {
+		if hd.PurchaseDate > datePart {
+			continue
+		}
+		ts, ok := series[hd.Ticker]
+		if !ok {
+			continue
+		}
+		price, ok := ts.prices.At(label)
+		if !ok {
+			continue
+		}
+		rate, ok := rateAt(ts.rates, ts.constant, ts.ratesSeries, label)
+		if !ok {
+			continue
+		}
+		total += hd.Quantity * price * rate
+	}
+	return total
+}
+
+func missingSeries(holdings []models.Holding, series map[string]tickerSeries) bool {
+	for _, hd := range holdings {
+		if _, ok := series[hd.Ticker]; !ok {
+			return true
+		}
+	}
+	return false
+}
+
+// depotValuesByDate liefert den Depotwert in CHF für jeden der Tage
+// (YYYY-MM-DD, aufsteigend) – für die Vermögensentwicklung.
+func (h *Handlers) depotValuesByDate(dates []string) ([]float64, error) {
+	result := make([]float64, len(dates))
+	holdings, err := h.loadHoldings()
+	if err != nil || len(holdings) == 0 || len(dates) == 0 {
+		return result, err
+	}
+	from, err := time.Parse("2006-01-02", dates[0])
+	if err != nil {
+		return nil, err
+	}
+	from = from.AddDate(0, 0, -10) // Vorlauf für Wochenenden/Feiertage
+	series := loadTickerSeries(holdings, func(t string) (stocks.Series, string, error) {
+		return h.market.Daily(t, from)
+	}, func(cur string) (stocks.Series, float64, bool, error) {
+		return h.market.CHFRateDaily(cur, from)
+	})
+	for i, d := range dates {
+		result[i] = depotValueAt(holdings, series, d)
+	}
+	return result, nil
 }
 
 // SankeyFlow ist eine einzelne Fluss-Kante im Sankey-Diagramm.

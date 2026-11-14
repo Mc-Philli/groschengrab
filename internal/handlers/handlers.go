@@ -14,12 +14,13 @@ import (
 )
 
 type Handlers struct {
-	db   *sql.DB
-	tmpl *template.Template
+	db     *sql.DB
+	tmpl   *template.Template
+	market marketData
 }
 
 func New(db *sql.DB, tmpl *template.Template) *Handlers {
-	return &Handlers{db: db, tmpl: tmpl}
+	return &Handlers{db: db, tmpl: tmpl, market: yahooMarket{}}
 }
 
 // Health wird von der Deploy-Pipeline nach jedem Neustart abgefragt.
@@ -49,31 +50,50 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var totalAssets float64
+	var accountsTotal float64
 	for _, a := range accounts {
-		totalAssets += a.Balance
+		accountsTotal += a.Balance
 	}
+	otherAssetsTotal, err := h.otherAssetsTotal()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	depotTotal, depotMissing, err := h.depotValueCHF()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	totalAssets := accountsTotal + otherAssetsTotal + depotTotal
 
 	data := struct {
-		Accounts        []models.Account
-		Transactions    []models.TransactionView
-		Categories      []models.Category
-		TotalAssets     float64
-		ErrorMsg        string
-		SuccessMsg      string
-		Today           string
-		Page            string
-		CurrentUserName string
+		Accounts         []models.Account
+		Transactions     []models.TransactionView
+		Categories       []models.Category
+		TotalAssets      float64
+		AccountsTotal    float64
+		OtherAssetsTotal float64
+		DepotTotal       float64
+		DepotMissing     int
+		ErrorMsg         string
+		SuccessMsg       string
+		Today            string
+		Page             string
+		CurrentUserName  string
 	}{
-		Accounts:        accounts,
-		Transactions:    transactions,
-		Categories:      categories,
-		TotalAssets:     totalAssets,
-		ErrorMsg:        r.URL.Query().Get("error"),
-		SuccessMsg:      r.URL.Query().Get("success"),
-		Today:           time.Now().Format("2006-01-02"),
-		Page:            "home",
-		CurrentUserName: currentUser(r).Name,
+		Accounts:         accounts,
+		Transactions:     transactions,
+		Categories:       categories,
+		TotalAssets:      totalAssets,
+		AccountsTotal:    accountsTotal,
+		OtherAssetsTotal: otherAssetsTotal,
+		DepotTotal:       depotTotal,
+		DepotMissing:     depotMissing,
+		ErrorMsg:         r.URL.Query().Get("error"),
+		SuccessMsg:       r.URL.Query().Get("success"),
+		Today:            time.Now().Format("2006-01-02"),
+		Page:             "home",
+		CurrentUserName:  currentUser(r).Name,
 	}
 
 	if err := h.tmpl.ExecuteTemplate(w, "index.html", data); err != nil {

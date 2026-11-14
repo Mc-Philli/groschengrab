@@ -108,37 +108,7 @@
                     <button type="submit" class="btn btn-primary">Regel anlegen</button>
                 </div>
             </form>
-            <p class="hint-text">Beim Import (und beim Anlegen einer Regel für bestehende, noch unkategorisierte Buchungen) wird die Kategorie anhand des Stichworts gesetzt. Groß-/Kleinschreibung spielt keine Rolle, bei mehreren Treffern gewinnt das längere Stichwort. Neue Kategorien werden automatisch in die Auswahlliste aufgenommen.</p>
-        </section>
-
-        <section class="card">
-            <h2>Yuh-Import</h2>
-            {{if .Accounts}}
-            <form method="POST" action="/import/yuh" enctype="multipart/form-data" class="form-grid">
-                <label>Auf welches Konto buchen?<br>
-                    <select name="account_id" required>
-                        {{range .Accounts}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </label>
-                <label>Aktivitätenexport (CSV)<br>
-                    <input type="file" name="file" accept=".csv,.tsv,.txt" required>
-                </label>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Yuh-Export importieren</button>
-                </div>
-            </form>
-            {{else}}
-            <p class="empty-hint">Lege zuerst oben ein Konto an, auf das die Yuh-Buchungen gehen sollen.</p>
-            {{end}}
-            <p class="hint-text">
-                Der Export muss als <strong>CSV</strong> vorliegen (in Numbers: Ablage → Exportieren → CSV).
-                Kartenzahlungen und Gutschriften werden als Ausgabe bzw. Einnahme gebucht.
-                Sparplan-Käufe werden als Position im Depot angelegt, der Betrag geht als Transfer auf das Konto „Yuh Anlagen" (wird bei Bedarf automatisch angelegt).
-                Verkäufe und Zeilen in Fremdwährung werden übersprungen und in der Meldung aufgelistet.
-                Du kannst dieselbe oder eine überlappende Datei mehrfach importieren, bereits vorhandene Buchungen werden erkannt.
-            </p>
+            <p class="hint-text">Beim Buchungen-Import (und beim Anlegen einer Regel für bestehende, noch unkategorisierte Buchungen) wird die Kategorie anhand des Stichworts gesetzt. Groß-/Kleinschreibung spielt keine Rolle, bei mehreren Treffern gewinnt das längere Stichwort. Neue Kategorien werden automatisch in die Auswahlliste aufgenommen.</p>
         </section>
 
         <section class="card">

@@ -155,6 +155,12 @@ func (h *Handlers) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rules, err := h.loadRules()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	imported := 0
 	var problems []string
 
@@ -165,6 +171,11 @@ func (h *Handlers) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			problems = append(problems, fmt.Sprintf("Zeile %d: %v", lineNum, err))
 			continue
+		}
+
+		// Buchungen ohne Kategorie über die Kategorie-Regeln zuordnen.
+		if strings.TrimSpace(rec.Category) == "" && rec.Kind != "transfer" {
+			rec.Category = matchRule(rules, rec.Description)
 		}
 
 		accountID, ok := accountIDs[account]

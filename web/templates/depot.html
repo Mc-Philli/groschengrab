@@ -3,6 +3,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Depot – Haushalts-App</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -18,11 +19,20 @@
         {{end}}
 
         <section class="card total-assets-card">
-            <div class="total-assets-label">Depot-Wert (CHF-Positionen)</div>
+            <div class="total-assets-label">Depot-Wert gesamt</div>
             <div class="total-assets-value">{{chf .TotalValueCHF}}</div>
-            {{if .HasForeignCurrency}}
-            <p class="hint-text">Positionen in Fremdwährung sind hier nicht mit eingerechnet (siehe Betrag je Position unten). Der Depot-Wert fließt aktuell noch nicht ins „Total Vermögen" auf der Startseite ein.</p>
+            {{if .Depots}}
+            <p class="hint-text">
+                {{range $i, $d := .Depots}}{{if $i}} · {{end}}{{$d.Name}} {{chf $d.ValueCHF}}{{end}}
+            </p>
+            <p class="hint-text {{if lt .TotalGainCHF 0.0}}amount-expense{{else}}amount-income{{end}}">
+                Gewinn/Verlust: {{chf .TotalGainCHF}}
+            </p>
             {{end}}
+            {{if .Missing}}
+            <p class="hint-text">⚠️ Für {{.Missing}} Position(en) ist gerade kein Kurs oder Wechselkurs verfügbar – sie fehlen in der Summe.</p>
+            {{end}}
+            <p class="hint-text">Alle Werte in CHF zum aktuellen Wechselkurs. Fließt ins „Total Vermögen" auf der Startseite ein.</p>
         </section>
 
         <section class="card">
@@ -36,58 +46,186 @@
                 <button type="button" class="period-btn" data-range="max">Max</button>
             </div>
             <canvas id="depot-chart" height="280"></canvas>
-            <p class="hint-text chart-fx-hint" data-chart="depot" style="display:none">Hinweis: Einzelne Positionen sind in Fremdwährung notiert und in dieser Kurve nicht berücksichtigt.</p>
-            <p class="hint-text">Bei „1 Tag" werden Intraday-Kurse verwendet (5-Minuten-Takt, sofern von Yahoo Finance verfügbar). Bei mehreren Positionen können die Zeitstempel dabei leicht voneinander abweichen.</p>
+            <p class="hint-text chart-fx-hint" data-chart="depot" style="display:none">Hinweis: Für einzelne Positionen sind keine historischen Kurse verfügbar, sie fehlen in dieser Kurve.</p>
         </section>
 
+        {{range .Depots}}
         <section class="card">
-            <h2>Positionen</h2>
-            {{if .Holdings}}
+            <h2>{{.Name}} <span class="hint-text">{{chf .ValueCHF}}</span></h2>
+            <div class="table-scroll">
             <table>
                 <tr>
-                    <th>Ticker</th><th>Anzahl</th><th>Kaufpreis</th><th>Kaufdatum</th>
-                    <th>Aktueller Kurs</th><th>Wert</th><th>Gewinn/Verlust</th><th></th>
+                    <th>ETF</th><th>Anzahl</th><th>Ø Kaufpreis</th><th>Kurs</th>
+                    <th>Wert</th><th>Gewinn/Verlust</th>
                 </tr>
-                {{range .Holdings}}
+                {{range .Positions}}
                 <tr>
-                    <td>{{.Ticker}}</td>
-                    <td>{{printf "%.4f" .Quantity}}</td>
-                    <td>{{printf "%.2f" .PurchasePrice}}</td>
-                    <td>{{.PurchaseDate}}</td>
+                    <td><strong>{{.Ticker}}</strong>{{if .Name}}<br><span class="hint-text">{{.Name}}</span>{{end}}</td>
+                    <td>{{qty .Quantity}}</td>
+                    <td>{{printf "%.2f" .AvgPrice}}</td>
                     {{if .PriceAvailable}}
                     <td>{{printf "%.2f" .CurrentPrice}} {{.Currency}}</td>
-                    <td>{{printf "%.2f" .CurrentValue}} {{.Currency}}</td>
+                    <td>{{if .FXAvailable}}{{chf .ValueCHF}}{{if ne .Currency "CHF"}}<br><span class="hint-text">{{printf "%.2f" .CurrentValue}} {{.Currency}}</span>{{end}}{{else}}{{printf "%.2f" .CurrentValue}} {{.Currency}}<br><span class="hint-text">kein Wechselkurs</span>{{end}}</td>
                     <td class="{{if lt .GainAbsolute 0.0}}amount-expense{{else}}amount-income{{end}}">
-                        {{printf "%.2f" .GainAbsolute}} {{.Currency}} ({{printf "%.1f" .GainPercent}}%)
+                        {{if .FXAvailable}}{{chf .GainCHF}}{{else}}{{printf "%.2f" .GainAbsolute}} {{.Currency}}{{end}}<br>({{printf "%.1f" .GainPercent}}%)
                     </td>
                     {{else}}
                     <td colspan="3" class="empty-hint">Kurs nicht verfügbar</td>
                     {{end}}
-                    <td class="col-action">
-                        <form method="POST" action="/holdings/{{.ID}}/delete"
-                              onsubmit="return confirm('Position «{{.Ticker}}» wirklich löschen?')">
-                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
-                        </form>
+                </tr>
+                <tr class="position-details-row">
+                    <td colspan="6">
+                        <details>
+                            <summary>{{len .Lots}} Kauf/Käufe · abgleichen · bearbeiten</summary>
+                            <div class="position-details">
+                                <form method="POST" action="/positions/reconcile" class="inline-form">
+                                    <input type="hidden" name="depot" value="{{.Depot}}">
+                                    <input type="hidden" name="ticker" value="{{.Ticker}}">
+                                    <label>Tatsächliche Anzahl beim Broker
+                                        <input type="text" name="actual_quantity" inputmode="decimal" placeholder="{{qty .Quantity}}" required size="10">
+                                    </label>
+                                    <button type="submit" class="btn btn-small">Abgleichen</button>
+                                </form>
+                                <form method="POST" action="/positions/move" class="inline-form">
+                                    <input type="hidden" name="depot" value="{{.Depot}}">
+                                    <input type="hidden" name="ticker" value="{{.Ticker}}">
+                                    <label>Depot <input type="text" name="new_depot" value="{{.Depot}}" list="depot-names" size="10"></label>
+                                    <label>Name <input type="text" name="name" value="{{.Name}}" size="22"></label>
+                                    <button type="submit" class="btn btn-small">Speichern</button>
+                                </form>
+                                <table class="lots-table">
+                                    <tr><th>Datum</th><th>Anzahl</th><th>Preis</th><th>Art</th><th></th></tr>
+                                    {{range .Lots}}
+                                    <tr>
+                                        <td>{{.PurchaseDate}}</td>
+                                        <td>{{qty .Quantity}}</td>
+                                        <td>{{printf "%.2f" .PurchasePrice}}</td>
+                                        <td>{{if eq .Source "savings_plan"}}Sparplan{{else if eq .Source "correction"}}Abgleich{{else}}Kauf{{end}}</td>
+                                        <td class="col-action">
+                                            <form method="POST" action="/holdings/{{.ID}}/delete"
+                                                  onsubmit="return confirm('Diesen Eintrag ({{.PurchaseDate}}, {{qty .Quantity}} Stück) wirklich löschen?')">
+                                                <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {{end}}
+                                </table>
+                            </div>
+                        </details>
                     </td>
                 </tr>
                 {{end}}
             </table>
-            {{else}}
-            <p class="empty-hint">Noch keine Positionen im Depot.</p>
+            </div>
+        </section>
+        {{else}}
+        <section class="card">
+            <p class="empty-hint">Noch keine Positionen im Depot. Erfasse unten einen Kauf oder lege einen Sparplan an.</p>
+        </section>
+        {{end}}
+
+        <section class="card">
+            <h2>Sparpläne</h2>
+            {{if .SavingsPlans}}
+            {{range .SavingsPlans}}
+            <div class="plan">
+                <div class="plan-head">
+                    <strong>{{.Depot}}</strong> · {{chf .Amount}} am {{.DayOfMonth}}. jeden Monats
+                    {{if not .Active}}<span class="badge">pausiert</span>{{end}}
+                </div>
+                <div class="hint-text">
+                    {{range $i, $it := .Items}}{{if $i}}, {{end}}{{$it.Ticker}} {{printf "%g" $it.Weight}} %{{end}}
+                    · {{if .AccountName}}belastet „{{.AccountName}}"{{else}}ohne Kontobelastung{{end}}
+                </div>
+                <div class="hint-text">
+                    {{if .LastExecutedOn}}Zuletzt ausgeführt: {{.LastExecutedOn}} · {{end}}
+                    {{if .Active}}Nächste Ausführung: {{.NextDue}}{{end}}
+                </div>
+                {{if .LastError}}<div class="hint-text amount-expense">⚠️ {{.LastError}}</div>{{end}}
+                <div class="plan-actions">
+                    <form method="POST" action="/savings-plans/{{.ID}}/toggle">
+                        <button type="submit" class="btn btn-small">{{if .Active}}Pausieren{{else}}Fortsetzen{{end}}</button>
+                    </form>
+                    <form method="POST" action="/savings-plans/{{.ID}}/delete"
+                          onsubmit="return confirm('Sparplan löschen? Bereits gebuchte Käufe bleiben im Depot.')">
+                        <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                    </form>
+                </div>
+            </div>
             {{end}}
+            <form method="POST" action="/savings-plans/run">
+                <button type="submit" class="btn btn-small">Fällige jetzt ausführen</button>
+            </form>
+            <p class="hint-text">Fällige Sparpläne werden automatisch stündlich gebucht (auch verpasste, z. B. wenn der Server aus war).</p>
+            {{else}}
+            <p class="empty-hint">Noch keine Sparpläne.</p>
+            {{end}}
+
+            <details class="add-plan">
+                <summary class="btn btn-primary">Sparplan anlegen</summary>
+                <form method="POST" action="/savings-plans" class="form-grid">
+                    <label>Depot<br>
+                        <input type="text" name="depot" list="depot-names" placeholder="z. B. WillBe" required>
+                    </label>
+                    <label>Betrag pro Monat (CHF)<br>
+                        <input type="text" name="amount" inputmode="decimal" placeholder="z. B. 500" required>
+                    </label>
+                    <label>Ausführungstag (1–28)<br>
+                        <input type="number" name="day_of_month" min="1" max="28" value="1" required>
+                    </label>
+                    <label>Erste Ausführung ab<br>
+                        <input type="date" name="start_date" value="{{.Today}}" required>
+                    </label>
+                    <label>Konto belasten (optional)<br>
+                        <select name="account_id">
+                            <option value="">– nicht belasten –</option>
+                            {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+                        </select>
+                    </label>
+                    <div class="plan-items">
+                        <div class="hint-text">ETFs und Anteil in % (zusammen 100 %)</div>
+                        {{range $.PlanItemRows}}
+                        <div class="inline-form">
+                            <input type="text" name="item_ticker" list="tickers" placeholder="Ticker" size="12">
+                            <input type="text" name="item_weight" inputmode="decimal" placeholder="%" size="5">
+                        </div>
+                        {{end}}
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Sparplan speichern</button>
+                    </div>
+                </form>
+                <p class="hint-text">
+                    Liegt die erste Ausführung in der Vergangenheit, werden die verpassten Monate sofort nachgebucht.
+                    Die Anzahl wird mit dem Schlusskurs des Ausführungstags berechnet (ohne Gebühren) – gleiche sie ab und zu über „abgleichen" mit der Broker-App ab.
+                    Mit Kontobelastung wird der Betrag als Ausgabe „Sparplan" gebucht.
+                </p>
+            </details>
         </section>
 
         <section class="card">
-            <h2>Position hinzufügen</h2>
-            <form method="POST" action="/holdings" class="form-grid">
+            <h2>Kauf erfassen</h2>
+            <div class="inline-form ticker-search">
+                <input type="text" name="q" id="ticker-search-q" placeholder="ISIN oder Name suchen, z. B. IE00BK5BQT80">
+                <button type="button" class="btn btn-small"
+                        hx-get="/api/ticker-search" hx-include="#ticker-search-q" hx-target="#ticker-search-results">Suchen</button>
+            </div>
+            <div id="ticker-search-results"></div>
+            <form method="POST" action="/holdings" class="form-grid" id="holding-form">
+                <label>Depot<br>
+                    <input type="text" name="depot" list="depot-names" placeholder="z. B. Saxo">
+                </label>
                 <label>Ticker<br>
-                    <input type="text" name="ticker" placeholder="z. B. AAPL, VWRL.SW, NESN.SW" required>
+                    <input type="text" name="ticker" placeholder="z. B. VWRL.SW" required>
+                </label>
+                <label>Name (optional)<br>
+                    <input type="text" name="name" placeholder="wird bei der Suche ausgefüllt">
                 </label>
                 <label>Anzahl<br>
-                    <input type="text" name="quantity" placeholder="z. B. 10" required>
+                    <input type="text" name="quantity" inputmode="decimal" placeholder="z. B. 10" required>
                 </label>
                 <label>Kaufpreis pro Stück<br>
-                    <input type="text" name="purchase_price" placeholder="z. B. 95.30" required>
+                    <input type="text" name="purchase_price" inputmode="decimal" placeholder="z. B. 95.30" required>
                 </label>
                 <label>Kaufdatum<br>
                     <input type="date" name="purchase_date" value="{{.Today}}">
@@ -96,9 +234,23 @@
                     <button type="submit" class="btn btn-primary">Hinzufügen</button>
                 </div>
             </form>
-            <p class="hint-text">Ticker-Symbole findest du z. B. auf finance.yahoo.com. Schweizer Titel an der SIX haben meist das Suffix „.SW" (z. B. „NESN.SW" für Nestlé, „VWRL.SW" für einen weltweiten ETF).</p>
+            <p class="hint-text">Die ISIN steht in der Broker-App beim jeweiligen ETF. Schweizer Börsenplätze (SIX, Endung „.SW") werden bevorzugt angezeigt. Den Kaufpreis in der Währung des Tickers angeben.</p>
         </section>
+
+        <datalist id="depot-names">{{range .DepotNames}}<option value="{{.}}">{{end}}</datalist>
+        <datalist id="tickers">{{range .Tickers}}<option value="{{.}}">{{end}}</datalist>
     </main>
+    <script>
+    // Klick auf einen Suchtreffer übernimmt Ticker und Name ins Kaufformular.
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.search-pick');
+        if (!btn) return;
+        var form = document.getElementById('holding-form');
+        form.elements.ticker.value = btn.dataset.symbol;
+        form.elements.name.value = btn.dataset.name;
+        form.elements.quantity.focus();
+    });
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/charts.js"></script>
 </body>
