@@ -1,6 +1,14 @@
 (function () {
-  const lineColor = '#2563eb';
-  const fillColor = 'rgba(37, 99, 235, 0.08)';
+  // Farben aus dem Stylesheet übernehmen (passt sich dem Dunkelmodus an).
+  const css = getComputedStyle(document.documentElement);
+  const cssVar = (name, fallback) => (css.getPropertyValue(name) || '').trim() || fallback;
+  const lineColor = cssVar('--accent', '#4f5bd5');
+  const fillColor = 'color-mix(in srgb, ' + lineColor + ' 12%, transparent)';
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = cssVar('--text-muted', '#77716a');
+    Chart.defaults.borderColor = cssVar('--border', '#ebe7e0');
+    Chart.defaults.font.family = cssVar('--font', 'system-ui');
+  }
 
   function showMessage(canvas, text) {
     const wrapper = canvas.closest('section') || canvas.parentElement;
@@ -81,6 +89,8 @@
             },
             options: {
               responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
               plugins: { legend: { display: false } },
               scales: {
                 x: { ticks: { maxTicksLimit: 8, autoSkip: true } },
@@ -169,9 +179,10 @@
         datasets: [{
           label: 'Budget',
           data: data.flows,
-          colorFrom: '#2563eb',
-          colorTo: '#16a34a',
+          colorFrom: cssVar('--accounts', '#3b63d9'),
+          colorTo: cssVar('--depot', '#168a52'),
           colorMode: 'gradient',
+          color: cssVar('--text', '#1d1c1a'),
         }],
       };
 
@@ -183,7 +194,7 @@
           chart = new Chart(canvas, {
             type: 'sankey',
             data: chartData,
-            options: { responsive: true },
+            options: { responsive: true, maintainAspectRatio: false },
           });
         }
       } catch (e) {

@@ -3,9 +3,11 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
     <title>Depot – Haushalts-App</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{static "style.css"}}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
@@ -18,16 +20,19 @@
         <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
         {{end}}
 
-        <section class="card total-assets-card">
+        <section class="card total-assets-card depot">
             <div class="total-assets-label">Depot-Wert gesamt</div>
             <div class="total-assets-value">{{chf .TotalValueCHF}}</div>
             {{if .Depots}}
-            <p class="hint-text">
-                {{range $i, $d := .Depots}}{{if $i}} · {{end}}{{$d.Name}} {{chf $d.ValueCHF}}{{end}}
-            </p>
-            <p class="hint-text {{if lt .TotalGainCHF 0.0}}amount-expense{{else}}amount-income{{end}}">
-                Gewinn/Verlust: {{chf .TotalGainCHF}}
-            </p>
+            <div style="margin-top:0.5rem"><span class="gain {{if lt .TotalGainCHF 0.0}}down{{else}}up{{end}}">{{if lt .TotalGainCHF 0.0}}▼{{else}}▲{{end}} {{chf .TotalGainCHF}}</span></div>
+            <div class="stat-tiles">
+                {{range .Depots}}
+                <div class="stat-tile depot">
+                    <span class="stat-label">📈 {{.Name}}</span>
+                    <span class="stat-value">{{chf .ValueCHF}}</span>
+                </div>
+                {{end}}
+            </div>
             {{end}}
             {{if .Missing}}
             <p class="hint-text">⚠️ Für {{.Missing}} Position(en) ist gerade kein Kurs oder Wechselkurs verfügbar – sie fehlen in der Summe.</p>
@@ -45,38 +50,38 @@
                 <button type="button" class="period-btn" data-range="1y">1J</button>
                 <button type="button" class="period-btn" data-range="max">Max</button>
             </div>
-            <canvas id="depot-chart" height="280"></canvas>
+            <div class="chart-box"><canvas id="depot-chart" height="280"></canvas></div>
             <p class="hint-text chart-fx-hint" data-chart="depot" style="display:none">Hinweis: Für einzelne Positionen sind keine historischen Kurse verfügbar, sie fehlen in dieser Kurve.</p>
         </section>
 
         {{range .Depots}}
-        <section class="card">
+        <section class="card depot-card">
             <h2>{{.Name}} <span class="hint-text">{{chf .ValueCHF}}</span></h2>
             <div class="table-scroll">
-            <table>
+            <table class="stack">
                 <tr>
-                    <th>ETF</th><th>Anzahl</th><th>Ø Kaufpreis</th><th>Kurs</th>
-                    <th>Wert</th><th>Gewinn/Verlust</th>
+                    <th>ETF</th><th class="num">Anzahl</th><th class="num">Ø Kaufpreis</th><th class="num">Kurs</th>
+                    <th class="num">Wert</th><th class="num">Gewinn/Verlust</th>
                 </tr>
                 {{range .Positions}}
-                <tr>
-                    <td><strong>{{.Ticker}}</strong>{{if .Name}}<br><span class="hint-text">{{.Name}}</span>{{end}}</td>
-                    <td>{{qty .Quantity}}</td>
-                    <td>{{printf "%.2f" .AvgPrice}}</td>
+                <tr class="has-details">
+                    <td class="cell-title">{{.Ticker}}{{if .Name}}<span class="cell-sub">{{.Name}}</span>{{end}}</td>
+                    <td data-label="Anzahl" class="num">{{qty .Quantity}}</td>
+                    <td data-label="Ø Kaufpreis" class="num">{{printf "%.2f" .AvgPrice}}</td>
                     {{if .PriceAvailable}}
-                    <td>{{printf "%.2f" .CurrentPrice}} {{.Currency}}</td>
-                    <td>{{if .FXAvailable}}{{chf .ValueCHF}}{{if ne .Currency "CHF"}}<br><span class="hint-text">{{printf "%.2f" .CurrentValue}} {{.Currency}}</span>{{end}}{{else}}{{printf "%.2f" .CurrentValue}} {{.Currency}}<br><span class="hint-text">kein Wechselkurs</span>{{end}}</td>
-                    <td class="{{if lt .GainAbsolute 0.0}}amount-expense{{else}}amount-income{{end}}">
-                        {{if .FXAvailable}}{{chf .GainCHF}}{{else}}{{printf "%.2f" .GainAbsolute}} {{.Currency}}{{end}}<br>({{printf "%.1f" .GainPercent}}%)
+                    <td data-label="Kurs" class="num">{{printf "%.2f" .CurrentPrice}} {{.Currency}}</td>
+                    <td data-label="Wert" class="num"><span>{{if .FXAvailable}}<strong>{{chf .ValueCHF}}</strong>{{if ne .Currency "CHF"}}<span class="cell-sub">{{printf "%.2f" .CurrentValue}} {{.Currency}}</span>{{end}}{{else}}{{printf "%.2f" .CurrentValue}} {{.Currency}}<span class="cell-sub">kein Wechselkurs</span>{{end}}</span></td>
+                    <td data-label="Gewinn/Verlust" class="num {{if lt .GainAbsolute 0.0}}amount-expense{{else}}amount-income{{end}}">
+                        <span>{{if .FXAvailable}}{{chf .GainCHF}}{{else}}{{printf "%.2f" .GainAbsolute}} {{.Currency}}{{end}}<span class="cell-sub">{{printf "%+.1f" .GainPercent}} %</span></span>
                     </td>
                     {{else}}
-                    <td colspan="3" class="empty-hint">Kurs nicht verfügbar</td>
+                    <td data-label="Kurs" colspan="3" class="num hint-text">nicht verfügbar</td>
                     {{end}}
                 </tr>
                 <tr class="position-details-row">
                     <td colspan="6">
                         <details>
-                            <summary>{{len .Lots}} Kauf/Käufe · abgleichen · bearbeiten</summary>
+                            <summary>{{len .Lots}} {{if eq (len .Lots) 1}}Kauf{{else}}Käufe{{end}} · abgleichen · bearbeiten</summary>
                             <div class="position-details">
                                 <form method="POST" action="/positions/reconcile" class="inline-form">
                                     <input type="hidden" name="depot" value="{{.Depot}}">
@@ -93,14 +98,13 @@
                                     <label>Name <input type="text" name="name" value="{{.Name}}" size="22"></label>
                                     <button type="submit" class="btn btn-small">Speichern</button>
                                 </form>
-                                <table class="lots-table">
-                                    <tr><th>Datum</th><th>Anzahl</th><th>Preis</th><th>Art</th><th></th></tr>
+                                <table class="lots-table stack">
+                                    <tr><th>Datum · Art</th><th>Anzahl</th><th>Preis</th><th></th></tr>
                                     {{range .Lots}}
                                     <tr>
-                                        <td>{{.PurchaseDate}}</td>
-                                        <td>{{qty .Quantity}}</td>
-                                        <td>{{printf "%.2f" .PurchasePrice}}</td>
-                                        <td>{{if eq .Source "savings_plan"}}Sparplan{{else if eq .Source "correction"}}Abgleich{{else}}Kauf{{end}}</td>
+                                        <td class="cell-title">{{.PurchaseDate}} · {{if eq .Source "savings_plan"}}Sparplan{{else if eq .Source "correction"}}Abgleich{{else}}Kauf{{end}}</td>
+                                        <td data-label="Anzahl">{{qty .Quantity}}</td>
+                                        <td data-label="Preis">{{printf "%.2f" .PurchasePrice}}</td>
                                         <td class="col-action">
                                             <form method="POST" action="/holdings/{{.ID}}/delete"
                                                   onsubmit="return confirm('Diesen Eintrag ({{.PurchaseDate}}, {{qty .Quantity}} Stück) wirklich löschen?')">
@@ -162,7 +166,7 @@
             {{end}}
 
             <details class="add-plan">
-                <summary class="btn btn-primary">Sparplan anlegen</summary>
+                <summary class="btn btn-primary">＋ Sparplan anlegen</summary>
                 <form method="POST" action="/savings-plans" class="form-grid">
                     <label>Depot<br>
                         <input type="text" name="depot" list="depot-names" placeholder="z. B. WillBe" required>
@@ -252,7 +256,7 @@
     });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/charts.js"></script>
+    <script src="{{static "charts.js"}}"></script>
 </body>
 </html>
 {{end}}

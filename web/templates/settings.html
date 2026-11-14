@@ -3,8 +3,11 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
     <title>Einstellungen – Haushalts-App</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{static "style.css"}}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
@@ -50,7 +53,7 @@
                     <span class="badge">{{.Name}}</span>
                     <form method="POST" action="/categories/{{.ID}}/delete"
                           onsubmit="return confirm('Kategorie «{{.Name}}» wirklich löschen?')">
-                        <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        <button type="submit" class="btn btn-danger btn-small" title="Kategorie löschen" aria-label="Kategorie «{{.Name}}» löschen">✕</button>
                     </form>
                 </li>
                 {{end}}
@@ -73,12 +76,12 @@
         <section class="card">
             <h2>Kategorie-Regeln</h2>
             {{if .Rules}}
-            <table>
+            <table class="stack">
                 <tr><th>Stichwort</th><th>Kategorie</th><th></th></tr>
                 {{range .Rules}}
                 <tr>
-                    <td>{{.Keyword}}</td>
-                    <td><span class="badge">{{.Category}}</span></td>
+                    <td class="cell-title">{{.Keyword}}</td>
+                    <td data-label="Kategorie"><span class="badge">{{.Category}}</span></td>
                     <td class="col-action">
                         <form method="POST" action="/rules/{{.ID}}/delete"
                               onsubmit="return confirm('Regel «{{.Keyword}}» wirklich löschen?')">
