@@ -445,3 +445,89 @@ tr:hover td {
     border-radius: 4px;
     font: inherit;
 }
+
+/* Depot: breite Tabellen auf dem Handy seitlich scrollbar */
+.table-scroll {
+    overflow-x: auto;
+}
+
+.position-details-row td {
+    border-top: none;
+    padding-top: 0;
+}
+
+.position-details-row summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.position-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+}
+
+.position-details label {
+    font-size: 0.85rem;
+}
+
+.lots-table {
+    font-size: 0.85rem;
+}
+
+.plan {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.6rem 0;
+}
+
+.plan-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+
+.add-plan {
+    margin-top: 1rem;
+}
+
+.add-plan > summary {
+    display: inline-block;
+    list-style: none;
+    cursor: pointer;
+}
+
+.add-plan > summary::-webkit-details-marker {
+    display: none;
+}
+
+.add-plan[open] > summary {
+    margin-bottom: 0.8rem;
+}
+
+.plan-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.ticker-search {
+    margin-bottom: 0.5rem;
+}
+
+.ticker-search input {
+    flex: 1;
+    min-width: 12rem;
+}
+
+.search-results {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.8rem;
+    font-size: 0.9rem;
+}
+
+.search-results li {
+    padding: 0.25rem 0;
+}

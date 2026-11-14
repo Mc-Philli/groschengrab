@@ -123,16 +123,21 @@ Fertig:
 - Login/Mehrbenutzer (bcrypt + Sessions)
 - Konten, Buchungen, Umbuchungen, Kategorien und Kategorie-Regeln
 - CSV-Export/-Import
-- Aktien/ETF-Depot mit Kursabfrage (Yahoo Finance)
+- Aktien/ETF-Depot mit Kursabfrage (Yahoo Finance): mehrere Depots (z. B. Saxo,
+  WillBe), Umrechnung in CHF, ISIN-Suche, Abgleich mit der Broker-Anzahl
+- Sparpläne: monatlicher CHF-Betrag, aufgeteilt auf ETFs, werden automatisch
+  gebucht (auch verpasste Termine), optional mit Kontobelastung
 - Sonstige Assets (Immobilie, Fahrzeug, Säule 3a, Bargeld, Schulden, …)
-  mit Wertverlauf; fließen ins Total Vermögen und in die Vermögensentwicklung ein
+  mit Wertverlauf
+- Total Vermögen und Vermögensentwicklung = Konten + Depots + sonstige Assets
 - Diagramme: Vermögens- und Depotverlauf, Sankey Einnahmen/Ausgaben
-
 - Nächtliches Datenbank-Backup auf dem Pi (lokal) inkl. Wiederherstellung
 
 Offen:
 
+- Handytaugliches Layout (v. a. breite Tabellen auf der Depot-Seite)
+- Buchungen bearbeiten, Konten umbenennen, wiederkehrende Buchungen
+- CSV-Import für WIR-Kontoauszüge
 - Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
   einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich
   in der Oberfläche, bevor gebucht wird
-- Depot-Wert ins Total Vermögen einrechnen

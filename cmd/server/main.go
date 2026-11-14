@@ -30,12 +30,15 @@ func main() {
 		"chf":       handlers.FormatCHF,
 		"txchf":     handlers.FormatTransactionAmount,
 		"assetType": handlers.AssetTypeLabel,
+		"qty":       handlers.FormatQuantity,
 	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)
 	}
 
 	h := handlers.New(database, tmpl)
+	// Prüft stündlich, ob Sparpläne fällig sind, und bucht sie.
+	h.StartSavingsPlanScheduler()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /login", h.LoginPage)
@@ -56,6 +59,13 @@ func main() {
 	mux.HandleFunc("POST /categories/{id}/delete", h.RequireAuth(h.DeleteCategory))
 	mux.HandleFunc("POST /holdings", h.RequireAuth(h.CreateHolding))
 	mux.HandleFunc("POST /holdings/{id}/delete", h.RequireAuth(h.DeleteHolding))
+	mux.HandleFunc("POST /positions/reconcile", h.RequireAuth(h.ReconcilePosition))
+	mux.HandleFunc("POST /positions/move", h.RequireAuth(h.MovePosition))
+	mux.HandleFunc("GET /api/ticker-search", h.RequireAuth(h.TickerSearch))
+	mux.HandleFunc("POST /savings-plans", h.RequireAuth(h.CreateSavingsPlan))
+	mux.HandleFunc("POST /savings-plans/run", h.RequireAuth(h.RunSavingsPlansNow))
+	mux.HandleFunc("POST /savings-plans/{id}/toggle", h.RequireAuth(h.ToggleSavingsPlan))
+	mux.HandleFunc("POST /savings-plans/{id}/delete", h.RequireAuth(h.DeleteSavingsPlan))
 	mux.HandleFunc("GET /assets", h.RequireAuth(h.Assets))
 	mux.HandleFunc("POST /assets", h.RequireAuth(h.CreateAsset))
 	mux.HandleFunc("POST /assets/{id}/value", h.RequireAuth(h.UpdateAssetValue))
