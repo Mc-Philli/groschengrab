@@ -3,6 +3,7 @@ package handlers
 import (
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // FormatCHF formatiert einen Betrag in Schweizer Schreibweise:
@@ -47,4 +48,14 @@ func pad2(n int64) string {
 		return "0" + strconv.FormatInt(n, 10)
 	}
 	return strconv.FormatInt(n, 10)
+}
+
+// Initial liefert den ersten Buchstaben eines Namens in Großschrift (für das
+// Avatar-Kreislein in der Kopfzeile).
+func Initial(name string) string {
+	r, _ := utf8.DecodeRuneInString(strings.TrimSpace(name))
+	if r == utf8.RuneError {
+		return "?"
+	}
+	return strings.ToUpper(string(r))
 }

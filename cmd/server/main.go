@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"household-app/internal/db"
 	"household-app/internal/handlers"
@@ -26,11 +28,17 @@ func main() {
 		log.Fatalf("Migrationen fehlgeschlagen: %v", err)
 	}
 
+	// Versionsstempel für CSS/JS-Links: ändert sich bei jedem Start (also
+	// jedem Deploy), damit Browser keine veraltete Datei aus dem Cache nehmen.
+	assetVersion := strconv.FormatInt(time.Now().Unix(), 36)
+
 	tmpl, err := template.New("").Funcs(template.FuncMap{
+		"static":    func(name string) string { return "/static/" + name + "?v=" + assetVersion },
 		"chf":       handlers.FormatCHF,
 		"txchf":     handlers.FormatTransactionAmount,
 		"assetType": handlers.AssetTypeLabel,
 		"qty":       handlers.FormatQuantity,
+		"initial":   handlers.Initial,
 	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)

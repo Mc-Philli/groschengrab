@@ -3,8 +3,11 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
     <title>Sonstige Assets – Haushalts-App</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{static "style.css"}}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
@@ -17,11 +20,20 @@
         <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
         {{end}}
 
-        <section class="card total-assets-card">
+        <section class="card total-assets-card assets">
             <div class="total-assets-label">Sonstige Assets (netto)</div>
             <div class="total-assets-value">{{chf .Total}}</div>
             {{if .DebtTotal}}
-            <p class="hint-text">Werte {{chf .PositiveTotal}} · abzüglich Schulden {{chf .DebtTotal}}</p>
+            <div class="stat-tiles">
+                <div class="stat-tile assets">
+                    <span class="stat-label">🏡 Werte</span>
+                    <span class="stat-value">{{chf .PositiveTotal}}</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-label">🏦 Schulden</span>
+                    <span class="stat-value amount-expense">−{{chf .DebtTotal}}</span>
+                </div>
+            </div>
             {{end}}
             <p class="hint-text">Fließt ins „Total Vermögen" auf der Startseite ein.</p>
         </section>
@@ -29,20 +41,20 @@
         <section class="card">
             <h2>Übersicht</h2>
             {{if .Assets}}
-            <table>
+            <table class="stack">
                 <tr>
-                    <th>Bezeichnung</th><th>Art</th><th>Wert</th><th>Stand per</th>
+                    <th>Bezeichnung</th><th>Art</th><th class="num">Wert</th><th>Stand per</th>
                     <th>Neuer Wert</th><th></th>
                 </tr>
                 {{range .Assets}}
                 <tr>
-                    <td>{{.Name}}</td>
-                    <td>{{assetType .Type}}</td>
-                    <td class="{{if .IsDebt}}amount-expense{{end}}">{{if .IsDebt}}−{{end}}{{chf .CurrentValue}}</td>
-                    <td>{{.UpdatedAt}}</td>
-                    <td>
+                    <td class="cell-title">{{.Name}}</td>
+                    <td data-label="Art"><span class="badge">{{assetType .Type}}</span></td>
+                    <td data-label="Wert" class="num {{if .IsDebt}}amount-expense{{end}}">{{if .IsDebt}}−{{end}}{{chf .CurrentValue}}</td>
+                    <td data-label="Stand per" class="nowrap">{{.UpdatedAt}}</td>
+                    <td class="cell-form">
                         <form method="POST" action="/assets/{{.ID}}/value" class="inline-form">
-                            <input type="text" name="value" placeholder="Wert" inputmode="decimal" required size="9">
+                            <input type="text" name="value" placeholder="Neuer Wert" inputmode="decimal" required size="9">
                             <input type="date" name="valued_at" value="{{$.Today}}" max="{{$.Today}}">
                             <button type="submit" class="btn btn-small">Speichern</button>
                         </form>

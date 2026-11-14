@@ -3,12 +3,16 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
     <title>Registrieren – Haushalts-App</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{static "style.css"}}">
 </head>
 <body class="auth-page">
     <section class="card auth-card">
-        <h1>🏠 Registrieren</h1>
+        <div class="brand-mark">🏠</div>
+        <h1>Registrieren</h1>
         {{if .ErrorMsg}}
         <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
         {{end}}
