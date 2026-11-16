@@ -154,6 +154,7 @@ type RecurringTransaction struct {
 	EveryMonths    int
 	StartDate      string
 	EndDate        string
+	BookFrom       string // frühere Termine werden nicht gebucht
 	Active         bool
 	LastExecutedOn string
 	LastError      string

@@ -187,9 +187,9 @@ func (h *Handlers) CreateSavingsPlan(w http.ResponseWriter, r *http.Request) {
 	}
 	fail := func(msg string) { redirectWithMessage(w, r, "/depot", "error", msg) }
 
-	depot := strings.TrimSpace(r.FormValue("depot"))
+	depot := depotFormValue(r)
 	if depot == "" {
-		fail("Bitte ein Depot angeben (z. B. Saxo oder WillBe).")
+		fail("Bitte ein Depot auswählen oder ein neues anlegen.")
 		return
 	}
 	amount, err := parseAmount(r.FormValue("amount"))

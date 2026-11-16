@@ -67,7 +67,10 @@
         </section>
 
         <section class="card" id="konten">
-            <h2>Konten</h2>
+            <details class="collapsible" id="konten-details">
+            <summary>
+                <h2>Konten <span class="collapsible-meta">{{len .Accounts}} · {{chf .AccountsTotal}}</span></h2>
+            </summary>
             {{if .Accounts}}
             <table class="stack">
                 <tr><th>Name</th><th>Typ</th><th class="num">Saldo</th></tr>
@@ -83,6 +86,7 @@
             {{else}}
             <p class="empty-hint">Noch keine Konten angelegt. Leg zuerst eins in den <a href="/settings">Einstellungen</a> an.</p>
             {{end}}
+            </details>
         </section>
 
         <section class="card">
@@ -138,6 +142,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey"></script>
     <script src="{{static "charts.js"}}"></script>
+    <script>
+    // Kontenübersicht: eingeklappt, bis man sie aufklappt; der Zustand
+    // bleibt auf diesem Gerät gespeichert. Die Kachel „Konten" klappt sie auf.
+    (function () {
+        var d = document.getElementById('konten-details');
+        if (!d) return;
+        try { d.open = localStorage.getItem('konten-open') === '1'; } catch (e) {}
+        d.addEventListener('toggle', function () {
+            try { localStorage.setItem('konten-open', d.open ? '1' : '0'); } catch (e) {}
+        });
+        function openFromHash() { if (location.hash === '#konten') d.open = true; }
+        openFromHash();
+        window.addEventListener('hashchange', openFromHash);
+        document.querySelector('a[href="#konten"]').addEventListener('click', function () { d.open = true; });
+    })();
+    </script>
 </body>
 </html>
 {{end}}

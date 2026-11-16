@@ -1437,3 +1437,29 @@ td.num .cell-sub {
     border-color: var(--negative);
     color: #fff;
 }
+
+/* Einklappbare Karte (Kontenübersicht) */
+.collapsible > summary {
+    list-style: none;
+    cursor: pointer;
+}
+.collapsible > summary::-webkit-details-marker { display: none; }
+.collapsible > summary h2 {
+    margin: 0;
+    align-items: center;
+}
+.collapsible > summary h2::after {
+    content: "›";
+    margin-left: auto;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--text-muted, #888);
+    transition: transform 0.15s;
+}
+.collapsible[open] > summary h2::after { transform: rotate(90deg); }
+.collapsible[open] > summary { margin-bottom: 1rem; }
+.collapsible-meta {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-muted, #888);
+}

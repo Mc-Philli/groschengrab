@@ -51,8 +51,9 @@ func addMonthsClamped(start time.Time, months int) time.Time {
 	return time.Date(first.Year(), first.Month(), day, 0, 0, 0, 0, time.UTC)
 }
 
-// nextRecurringDate liefert den nächsten Termin nach der letzten Ausführung,
-// sofern er nicht nach until (und nicht nach dem Enddatum) liegt; sonst "".
+// nextRecurringDate liefert den nächsten Termin nach der letzten Ausführung
+// und nicht vor BookFrom, sofern er nicht nach until (und nicht nach dem
+// Enddatum) liegt; sonst "".
 func nextRecurringDate(r models.RecurringTransaction, until string) string {
 	start, err := time.Parse("2006-01-02", r.StartDate)
 	if err != nil || r.EveryMonths <= 0 {
@@ -60,7 +61,7 @@ func nextRecurringDate(r models.RecurringTransaction, until string) string {
 	}
 	for k := 0; k < 2400; k++ {
 		d := addMonthsClamped(start, k*r.EveryMonths).Format("2006-01-02")
-		if r.LastExecutedOn != "" && d <= r.LastExecutedOn {
+		if (r.LastExecutedOn != "" && d <= r.LastExecutedOn) || d < r.BookFrom {
 			continue
 		}
 		if (r.EndDate != "" && d > r.EndDate) || d > until {
@@ -74,7 +75,7 @@ func nextRecurringDate(r models.RecurringTransaction, until string) string {
 func (h *Handlers) loadRecurring() ([]models.RecurringTransaction, error) {
 	rows, err := h.db.Query(`SELECT r.id, r.account_id, a.name, COALESCE(r.to_account_id, 0), COALESCE(b.name, ''),
 			r.user_id, r.kind, r.amount, r.category, r.description, r.every_months, r.start_date,
-			COALESCE(r.end_date, ''), r.active, COALESCE(r.last_executed_on, ''), COALESCE(r.last_error, '')
+			COALESCE(r.end_date, ''), COALESCE(r.book_from, ''), r.active, COALESCE(r.last_executed_on, ''), COALESCE(r.last_error, '')
 		FROM recurring_transactions r
 		JOIN accounts a ON a.id = r.account_id
 		LEFT JOIN accounts b ON b.id = r.to_account_id
@@ -88,7 +89,7 @@ func (h *Handlers) loadRecurring() ([]models.RecurringTransaction, error) {
 		var x models.RecurringTransaction
 		if err := rows.Scan(&x.ID, &x.AccountID, &x.AccountName, &x.ToAccountID, &x.ToAccountName,
 			&x.UserID, &x.Kind, &x.Amount, &x.Category, &x.Description, &x.EveryMonths, &x.StartDate,
-			&x.EndDate, &x.Active, &x.LastExecutedOn, &x.LastError); err != nil {
+			&x.EndDate, &x.BookFrom, &x.Active, &x.LastExecutedOn, &x.LastError); err != nil {
 			return nil, err
 		}
 		if x.Active {
@@ -293,8 +294,9 @@ func (h *Handlers) parseRecurringForm(r *http.Request) (f txForm, every int, sta
 	return
 }
 
-// CreateRecurring legt einen Dauerauftrag an. Liegt die erste Buchung in
-// der Vergangenheit, werden verpasste Termine sofort nachgebucht.
+// CreateRecurring legt einen Dauerauftrag an. Gebucht wird erst ab heute:
+// Termine vor dem Anlegen stecken schon im Kontostand und werden nicht
+// nachgebucht.
 func (h *Handlers) CreateRecurring(w http.ResponseWriter, r *http.Request) {
 	f, every, start, end, msg, err := h.parseRecurringForm(r)
 	if err != nil {
@@ -307,10 +309,10 @@ func (h *Handlers) CreateRecurring(w http.ResponseWriter, r *http.Request) {
 	}
 	rec := f.Record
 	if _, err := h.db.Exec(`INSERT INTO recurring_transactions
-			(account_id, to_account_id, user_id, kind, amount, category, description, every_months, start_date, end_date)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			(account_id, to_account_id, user_id, kind, amount, category, description, every_months, start_date, end_date, book_from)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		f.AccountID, f.ToAccountID, currentUser(r).ID, rec.Kind, rec.Amount, rec.Category, rec.Description,
-		every, start, sql.NullString{String: end, Valid: end != ""}); err != nil {
+		every, start, sql.NullString{String: end, Valid: end != ""}, today()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -318,7 +320,8 @@ func (h *Handlers) CreateRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateRecurring ändert einen Dauerauftrag. Bereits gebuchte Buchungen
-// bleiben unverändert; die Änderung gilt ab dem nächsten Termin.
+// bleiben unverändert; die Änderung gilt ab dem nächsten Termin (ab heute,
+// ein in die Vergangenheit verschobenes Datum wird nicht nachgebucht).
 func (h *Handlers) UpdateRecurring(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -336,10 +339,10 @@ func (h *Handlers) UpdateRecurring(w http.ResponseWriter, r *http.Request) {
 	}
 	rec := f.Record
 	res, err := h.db.Exec(`UPDATE recurring_transactions SET account_id = ?, to_account_id = ?, kind = ?, amount = ?,
-			category = ?, description = ?, every_months = ?, start_date = ?, end_date = ?, last_error = NULL
+			category = ?, description = ?, every_months = ?, start_date = ?, end_date = ?, book_from = ?, last_error = NULL
 		WHERE id = ?`,
 		f.AccountID, f.ToAccountID, rec.Kind, rec.Amount, rec.Category, rec.Description,
-		every, start, sql.NullString{String: end, Valid: end != ""}, id)
+		every, start, sql.NullString{String: end, Valid: end != ""}, today(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -352,9 +355,9 @@ func (h *Handlers) UpdateRecurring(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) finishRecurringChange(w http.ResponseWriter, r *http.Request, msg string) {
-	n, errs := h.RunDueRecurring(time.Now().Format("2006-01-02"))
+	n, errs := h.RunDueRecurring(today())
 	if n > 0 {
-		msg += fmt.Sprintf(" %d fällige Buchung(en) nachgebucht.", n)
+		msg += fmt.Sprintf(" %d heute fällige Buchung(en) gebucht.", n)
 	}
 	if len(errs) > 0 {
 		redirectWithMessage(w, r, "/recurring", "error", msg+" Achtung: "+strings.Join(errs, "; "))
@@ -379,8 +382,7 @@ func (h *Handlers) ToggleRecurring(w http.ResponseWriter, r *http.Request) {
 	if active {
 		_, err = h.db.Exec(`UPDATE recurring_transactions SET active = 0 WHERE id = ?`, id)
 	} else {
-		_, err = h.db.Exec(`UPDATE recurring_transactions SET active = 1, last_error = NULL,
-			last_executed_on = MAX(COALESCE(last_executed_on, ''), date('now', '-1 day')) WHERE id = ?`, id)
+		_, err = h.db.Exec(`UPDATE recurring_transactions SET active = 1, last_error = NULL, book_from = ? WHERE id = ?`, today(), id)
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -436,4 +438,18 @@ func logRun(what string, n int, errs []string) {
 // erste Buchung, Enddatum); als Template-Funktion "schedule" registriert.
 func ScheduleFields(intervals any, every int, start, end string) map[string]any {
 	return map[string]any{"Intervals": intervals, "Every": every, "Start": start, "End": end}
+}
+
+func today() string { return time.Now().Format("2006-01-02") }
+
+// Dict baut im Template eine Map aus Schlüssel/Wert-Paaren, um Teil-Templates
+// mehrere Werte zu übergeben: {{template "x" (dict "A" 1 "B" 2)}}.
+func Dict(pairs ...any) map[string]any {
+	m := make(map[string]any, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		if k, ok := pairs[i].(string); ok {
+			m[k] = pairs[i+1]
+		}
+	}
+	return m
 }

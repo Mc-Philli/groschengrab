@@ -142,7 +142,7 @@ Fertig:
 - Buchungen bearbeiten (Salden werden automatisch korrigiert), Konten
   umbenennen und Saldo mit der Bank abgleichen
 - Daueraufträge (monatlich, vierteljährlich, halbjährlich, jährlich), werden
-  automatisch gebucht, auch verpasste Termine
+  automatisch am Termin gebucht (Termine vor dem Anlegen werden nicht nachgebucht)
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
   (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 

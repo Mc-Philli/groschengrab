@@ -16,9 +16,6 @@ import (
 	"household-app/internal/stocks"
 )
 
-// Depot-Namen, die im Formular immer vorgeschlagen werden.
-var defaultDepotNames = []string{"Saxo", "WillBe"}
-
 const noDepotName = "Ohne Depot"
 
 // Depot zeigt alle Positionen gruppiert nach Depot, mit live abgefragten
@@ -59,7 +56,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		CurrentUserName string
 	}{
 		Depots:          depots,
-		DepotNames:      depotNameSuggestions(holdings, plans),
+		DepotNames:      depotNameSuggestions(holdings, plans, accounts),
 		Tickers:         tickerSuggestions(holdings),
 		TotalValueCHF:   totalCHF,
 		TotalGainCHF:    gainCHF,
@@ -79,7 +76,10 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func depotNameSuggestions(holdings []models.Holding, plans []models.SavingsPlan) []string {
+// depotNameSuggestions sammelt die bekannten Depots für die Auswahllisten:
+// Konten vom Typ „Depot" und alle Depots, die schon Positionen oder
+// Sparpläne haben.
+func depotNameSuggestions(holdings []models.Holding, plans []models.SavingsPlan, accounts []models.Account) []string {
 	seen := map[string]bool{}
 	var names []string
 	add := func(n string) {
@@ -88,8 +88,10 @@ func depotNameSuggestions(holdings []models.Holding, plans []models.SavingsPlan)
 			names = append(names, n)
 		}
 	}
-	for _, n := range defaultDepotNames {
-		add(n)
+	for _, a := range accounts {
+		if a.Type == "Depot" {
+			add(a.Name)
+		}
 	}
 	for _, hd := range holdings {
 		add(hd.Depot)
@@ -288,7 +290,7 @@ func (h *Handlers) CreateHolding(w http.ResponseWriter, r *http.Request) {
 		redirectWithMessage(w, r, "/depot", "error", "Ticker darf nicht leer sein.")
 		return
 	}
-	depot := strings.TrimSpace(r.FormValue("depot"))
+	depot := depotFormValue(r)
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	quantity, err := parseAmount(r.FormValue("quantity"))
@@ -455,4 +457,14 @@ func (h *Handlers) TickerSearch(w http.ResponseWriter, r *http.Request) {
 			template.HTMLEscapeString(res.Exchange), template.HTMLEscapeString(res.Type))
 	}
 	fmt.Fprint(w, `</ul>`)
+}
+
+// depotFormValue liest das Depot aus der Auswahlliste; bei „Neues Depot …"
+// steht der Name im Textfeld depot_new.
+func depotFormValue(r *http.Request) string {
+	depot := strings.TrimSpace(r.FormValue("depot"))
+	if depot == "__new__" {
+		depot = strings.TrimSpace(r.FormValue("depot_new"))
+	}
+	return depot
 }
