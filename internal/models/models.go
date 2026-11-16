@@ -12,6 +12,7 @@ type Account struct {
 	Name    string
 	Type    string
 	Balance float64
+	TxCount int // Anzahl Buchungen (auch als Transfer-Zielkonto)
 }
 
 type Transaction struct {

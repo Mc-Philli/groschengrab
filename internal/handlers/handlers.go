@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -164,7 +163,9 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) loadAccounts() ([]models.Account, error) {
-	rows, err := h.db.Query(`SELECT id, name, type, balance FROM accounts ORDER BY name`)
+	rows, err := h.db.Query(`SELECT a.id, a.name, a.type, a.balance,
+			(SELECT COUNT(*) FROM transactions t WHERE t.account_id = a.id OR t.to_account_id = a.id)
+		FROM accounts a ORDER BY a.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +174,7 @@ func (h *Handlers) loadAccounts() ([]models.Account, error) {
 	var accounts []models.Account
 	for rows.Next() {
 		var a models.Account
-		if err := rows.Scan(&a.ID, &a.Name, &a.Type, &a.Balance); err != nil {
+		if err := rows.Scan(&a.ID, &a.Name, &a.Type, &a.Balance, &a.TxCount); err != nil {
 			return nil, err
 		}
 		accounts = append(accounts, a)
@@ -426,48 +427,6 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirectWithMessage(w, r, "/", "success", "Buchung gelöscht.")
-}
-
-// DeleteAccount löscht ein Konto – aber nur, wenn keine Buchungen mehr daran
-// hängen (auch nicht als Transfer-Zielkonto), damit keine verwaisten Daten
-// entstehen.
-func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		http.Error(w, "Ungültige Konto-ID", http.StatusBadRequest)
-		return
-	}
-
-	var count int
-	if err := h.db.QueryRow(`SELECT COUNT(*) FROM transactions WHERE account_id = ? OR to_account_id = ?`, id, id).Scan(&count); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if count > 0 {
-		redirectWithMessage(w, r, "/settings", "error", fmt.Sprintf(
-			"Konto kann nicht gelöscht werden: %d Buchung(en) hängen noch daran. Bitte zuerst diese Buchungen löschen.", count,
-		))
-		return
-	}
-	var plans int
-	if err := h.db.QueryRow(`SELECT
-			(SELECT COUNT(*) FROM recurring_transactions WHERE account_id = ?1 OR to_account_id = ?1) +
-			(SELECT COUNT(*) FROM savings_plans WHERE account_id = ?1)`, id).Scan(&plans); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if plans > 0 {
-		redirectWithMessage(w, r, "/settings", "error",
-			"Konto kann nicht gelöscht werden: Ein Dauerauftrag oder Sparplan bucht noch darauf. Bitte diesen zuerst löschen oder ändern.")
-		return
-	}
-
-	if _, err := h.db.Exec(`DELETE FROM accounts WHERE id = ?`, id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	redirectWithMessage(w, r, "/settings", "success", "Konto gelöscht.")
 }
 
 // CreateCategory verarbeitet das Formular "Kategorie anlegen" auf der

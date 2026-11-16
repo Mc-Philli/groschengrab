@@ -1398,3 +1398,42 @@ td.num .cell-sub {
         line-height: 1;
     }
 }
+
+/* ---------- Neu anfangen ---------- */
+.form-grid .full-width {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.checkbox-label input {
+    width: auto;
+}
+
+.danger-zone > details > summary {
+    display: inline-flex;
+    list-style: none;
+    cursor: pointer;
+    border: 1px solid var(--negative-soft);
+}
+
+.danger-zone > details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.danger-zone > details[open] > summary {
+    margin-bottom: 1rem;
+}
+
+.btn-danger.btn-danger-solid,
+.btn-danger.btn-danger-solid:hover {
+    background: var(--negative);
+    border-color: var(--negative);
+    color: #fff;
+}

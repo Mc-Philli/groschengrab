@@ -53,8 +53,8 @@
                     </form>
                     <p class="hint-text">Weicht der Saldo laut Bank ab, wird die Differenz als Buchung „Saldo-Abgleich" mit heutigem Datum erfasst.</p>
                     <form method="POST" action="/accounts/{{.ID}}/delete"
-                          onsubmit="return confirm('Konto «{{.Name}}» wirklich löschen?')">
-                        <button type="submit" class="btn btn-danger btn-small">Konto löschen</button>
+                          onsubmit="return confirm({{if .TxCount}}'Konto «{{.Name}}» und alle {{.TxCount}} Buchung(en) darauf löschen? Umbuchungen von/auf andere Konten werden dort rückgängig gemacht. Das lässt sich nicht rückgängig machen.'{{else}}'Konto «{{.Name}}» wirklich löschen?'{{end}})">
+                        <button type="submit" class="btn btn-danger btn-small">Konto löschen{{if .TxCount}} (inkl. {{.TxCount}} Buchung{{if gt .TxCount 1}}en{{end}}){{end}}</button>
                     </form>
                 </details>
                 {{end}}
@@ -177,6 +177,30 @@
                 </form>
             </div>
             <p class="hint-text">Das Import-Format entspricht genau dem Export. Am einfachsten: erst exportieren, in Excel/Numbers bearbeiten, dann wieder importieren. Konten beim Buchungs-Import müssen bereits existieren (Zuordnung über den Namen).</p>
+        </section>
+        <section class="card danger-zone">
+            <h2>Neu anfangen</h2>
+            <details>
+                <summary class="btn btn-danger btn-small">Alle Daten löschen …</summary>
+                <form method="POST" action="/settings/reset" class="form-grid"
+                      onsubmit="return confirm('Wirklich alle Konten, Buchungen, Depot-Positionen, Sparpläne, Daueraufträge und Assets löschen?')">
+                    <p class="hint-text full-width">
+                        Löscht alle Konten, Buchungen, Daueraufträge, Depot-Positionen, Sparpläne und sonstigen Assets
+                        und legt die Standard-Konten (Privatkonto, Sparkonto, Bargeld) neu an.
+                        Die Logins aller Personen bleiben erhalten. Vorher wird automatisch eine Sicherheitskopie der Datenbank gespeichert.
+                    </p>
+                    <label class="checkbox-label full-width">
+                        <input type="checkbox" name="keep_setup" value="1" checked>
+                        Kategorien und Kategorie-Regeln behalten
+                    </label>
+                    <label>Zur Bestätigung <strong>LÖSCHEN</strong> eintippen<br>
+                        <input type="text" name="confirm" autocomplete="off" autocapitalize="characters" required>
+                    </label>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-danger btn-danger-solid">Alles löschen</button>
+                    </div>
+                </form>
+            </details>
         </section>
     </main>
     <script>

@@ -64,6 +64,7 @@ func main() {
 	mux.HandleFunc("POST /accounts", h.RequireAuth(h.CreateAccount))
 	mux.HandleFunc("POST /accounts/{id}", h.RequireAuth(h.UpdateAccount))
 	mux.HandleFunc("POST /accounts/{id}/delete", h.RequireAuth(h.DeleteAccount))
+	mux.HandleFunc("POST /settings/reset", h.RequireAuth(h.ResetData))
 	mux.HandleFunc("POST /transactions", h.RequireAuth(h.CreateTransaction))
 	mux.HandleFunc("GET /transactions/{id}/edit", h.RequireAuth(h.EditTransactionPage))
 	mux.HandleFunc("POST /transactions/{id}", h.RequireAuth(h.UpdateTransaction))
