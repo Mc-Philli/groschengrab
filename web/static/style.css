@@ -1463,3 +1463,9 @@ td.num .cell-sub {
     font-size: 0.9rem;
     color: var(--text-muted, #888);
 }
+
+/* Falls die Seite unter der Statusleiste beginnt (Notch), rutscht die
+   Kopfzeile darunter. Normalerweise ist der Abstand 0. */
+.app-header {
+    padding-top: env(safe-area-inset-top);
+}

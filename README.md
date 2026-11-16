@@ -100,6 +100,14 @@ Datenbank, **nicht** vor einem Ausfall der SD-Karte. Dafür den Speicherort per
 `BACKUP_DIR` in `/etc/systemd/system/household-app-backup.service` z. B. auf
 einen USB-Stick legen, oder später zusätzlich in die Cloud kopieren.
 
+## Als App aufs iPhone
+
+Safari öffnen, die Adresse des Pi aufrufen (unterwegs über das
+Fritzbox-VPN), dann Teilen-Knopf → „Zum Home-Bildschirm". Die App heißt
+dort „Haushalt", startet ohne Adressleiste und bleibt 30 Tage angemeldet.
+Die Anmeldung gilt getrennt von Safari, du meldest dich also in der App
+einmal neu an.
+
 ## Lokale Entwicklung (auf deinem PC)
 
 ```bash
@@ -144,6 +152,7 @@ Fertig:
 - Daueraufträge (monatlich, vierteljährlich, halbjährlich, jährlich), werden
   automatisch am Termin gebucht (Termine vor dem Anlegen werden nicht nachgebucht)
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
+- Als App auf dem Homescreen installierbar (Icon, Vollbild)
   (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 
 Offen:
