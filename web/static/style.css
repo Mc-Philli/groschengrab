@@ -1469,3 +1469,45 @@ td.num .cell-sub {
 .app-header {
     padding-top: env(safe-area-inset-top);
 }
+
+/* ---------- Runder +-Knopf (nur Handy) ---------- */
+.fab {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .fab {
+        position: fixed;
+        right: 1.1rem;
+        bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem);
+        z-index: 31;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(140deg, var(--accent), #8a63d2);
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(79, 91, 213, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.12s;
+    }
+
+    .fab:hover {
+        text-decoration: none;
+    }
+
+    .fab:active {
+        transform: scale(0.92);
+    }
+
+    .fab svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Platz, damit der Knopf das Seitenende nicht verdeckt. */
+    main {
+        padding-bottom: 4.5rem;
+    }
+}

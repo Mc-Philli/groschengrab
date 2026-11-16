@@ -56,17 +56,6 @@
             <div class="chart-box"><canvas id="networth-chart" height="280"></canvas></div>
         </section>
 
-        <section class="card">
-            <h2>Einnahmen &amp; Ausgaben</h2>
-            <div class="month-selector">
-                <button type="button" id="sankey-prev-month">◀</button>
-                <span id="sankey-month-label"></span>
-                <button type="button" id="sankey-next-month">▶</button>
-            </div>
-            <div class="chart-box chart-box-tall"><canvas id="sankey-chart"></canvas></div>
-            <p id="sankey-empty-hint" class="empty-hint" style="display:none">Keine Einnahmen oder Ausgaben in diesem Monat.</p>
-        </section>
-
         <section class="card" id="konten">
             <details class="collapsible" id="konten-details">
             <summary>
@@ -141,7 +130,6 @@
         </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey"></script>
     <script src="{{static "charts.js"}}"></script>
     <script>
     // Kontenübersicht: eingeklappt, bis man sie aufklappt; der Zustand

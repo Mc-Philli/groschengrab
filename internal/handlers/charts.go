@@ -364,3 +364,20 @@ func (h *Handlers) SankeyData(w http.ResponseWriter, r *http.Request) {
 		TotalExpense float64      `json:"totalExpense"`
 	}{Month: month, Flows: flows, TotalIncome: totalIncome, TotalExpense: totalExpense})
 }
+
+// ReportPage zeigt die Auswertung: Einnahmen und Ausgaben pro Monat als
+// Sankey-Diagramm (Daten über /api/sankey).
+func (h *Handlers) ReportPage(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		ErrorMsg        string
+		SuccessMsg      string
+		Page            string
+		CurrentUserName string
+	}{
+		Page:            "report",
+		CurrentUserName: currentUser(r).Name,
+	}
+	if err := h.tmpl.ExecuteTemplate(w, "report.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

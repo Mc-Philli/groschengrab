@@ -1,0 +1,32 @@
+{{define "report.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    {{template "appmeta"}}
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
+    <title>Auswertung – Haushalts-App</title>
+    <link rel="stylesheet" href="{{static "style.css"}}">
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        <section class="card">
+            <h2>Einnahmen &amp; Ausgaben</h2>
+            <div class="month-selector">
+                <button type="button" id="sankey-prev-month">◀</button>
+                <span id="sankey-month-label"></span>
+                <button type="button" id="sankey-next-month">▶</button>
+            </div>
+            <div class="chart-box chart-box-tall"><canvas id="sankey-chart"></canvas></div>
+            <p id="sankey-empty-hint" class="empty-hint" style="display:none">Keine Einnahmen oder Ausgaben in diesem Monat.</p>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey"></script>
+    <script src="{{static "charts.js"}}"></script>
+</body>
+</html>
+{{end}}
