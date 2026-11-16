@@ -70,68 +70,28 @@
             <h2>Konten</h2>
             {{if .Accounts}}
             <table class="stack">
-                <tr><th>Name</th><th>Typ</th><th class="num">Saldo</th><th></th></tr>
+                <tr><th>Name</th><th>Typ</th><th class="num">Saldo</th></tr>
                 {{range .Accounts}}
                 <tr>
-                    <td class="cell-title">{{.Name}}</td>
+                    <td class="cell-title"><a href="/settings#konto-{{.ID}}" class="plain-link">{{.Name}}</a></td>
                     <td data-label="Typ"><span class="badge">{{.Type}}</span></td>
                     <td data-label="Saldo" class="num {{if lt .Balance 0.0}}amount-expense{{end}}">{{chf .Balance}}</td>
-                    <td class="col-action">
-                        <form method="POST" action="/accounts/{{.ID}}/delete"
-                              onsubmit="return confirm('Konto «{{.Name}}» wirklich löschen?')">
-                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
-                        </form>
-                    </td>
                 </tr>
                 {{end}}
             </table>
+            <p class="hint-text">Umbenennen, Saldo abgleichen oder löschen: Konto antippen.</p>
             {{else}}
             <p class="empty-hint">Noch keine Konten angelegt. Leg zuerst eins in den <a href="/settings">Einstellungen</a> an.</p>
             {{end}}
         </section>
 
         <section class="card">
-            <h2>Buchung erfassen</h2>
+            <h2 class="card-title-row">Buchung erfassen <a href="/recurring" class="btn btn-secondary btn-small">🔁 Daueraufträge</a></h2>
             {{if .Accounts}}
             <form method="POST" action="/transactions" class="form-grid">
-                <label>Konto<br>
-                    <select name="account_id" required>
-                        {{range .Accounts}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </label>
-                <label>Art<br>
-                    <select name="kind" required
-                            onchange="document.getElementById('to-account-field').style.display = (this.value === 'transfer') ? 'block' : 'none'">
-                        <option value="expense">Ausgabe</option>
-                        <option value="income">Einnahme</option>
-                        <option value="transfer">Transfer (zwischen Konten)</option>
-                    </select>
-                </label>
-                <label id="to-account-field" style="display:none">Zielkonto (bei Transfer)<br>
-                    <select name="to_account_id">
-                        {{range .Accounts}}
-                        <option value="{{.ID}}">{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </label>
-                <label>Betrag (CHF)<br>
-                    <input type="text" name="amount" placeholder="z. B. 12.50" required>
-                </label>
+                {{template "txfields" .NewForm}}
                 <label>Datum<br>
                     <input type="date" name="booked_at" value="{{.Today}}">
-                </label>
-                <label>Kategorie<br>
-                    <select name="category">
-                        <option value="">– keine –</option>
-                        {{range .Categories}}
-                        <option value="{{.Name}}">{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </label>
-                <label>Beschreibung<br>
-                    <input type="text" name="description">
                 </label>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Buchen</button>
@@ -145,7 +105,7 @@
             {{end}}
         </section>
 
-        <section class="card">
+        <section class="card" id="buchungen">
             <h2>Letzte Buchungen</h2>
             {{if .Transactions}}
             <table class="tx-table">
@@ -158,17 +118,14 @@
                     <td class="tx-desktop nowrap">{{.BookedAt}}</td>
                     <td class="tx-desktop">{{.AccountName}}{{if eq .Kind "transfer"}} → {{.ToAccountName}}{{end}}</td>
                     <td class="tx-desktop">{{if .Category}}<span class="badge">{{.Category}}</span>{{end}}</td>
-                    <td class="tx-desc">{{if .Description}}{{.Description}}{{else if .Category}}{{.Category}}{{else if eq .Kind "transfer"}}Umbuchung{{else}}–{{end}}</td>
+                    <td class="tx-desc"><a href="/transactions/{{.ID}}/edit" class="plain-link tx-link">{{if .Recurring}}🔁 {{end}}{{if .Description}}{{.Description}}{{else if .Category}}{{.Category}}{{else if eq .Kind "transfer"}}Umbuchung{{else}}–{{end}}</a></td>
                     <td class="tx-desktop">{{.UserName}}</td>
                     <td class="tx-meta">{{.BookedAt}} · {{.AccountName}}{{if eq .Kind "transfer"}} → {{.ToAccountName}}{{end}}{{if .Category}} · {{.Category}}{{end}} · {{.UserName}}</td>
                     <td class="tx-amount num {{if eq .Kind "expense"}}amount-expense{{else if eq .Kind "income"}}amount-income{{else}}amount-transfer{{end}}">
                         {{txchf .Kind .Amount}}
                     </td>
                     <td class="col-action">
-                        <form method="POST" action="/transactions/{{.ID}}/delete"
-                              onsubmit="return confirm('Diese Buchung wirklich löschen?')">
-                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
-                        </form>
+                        <a href="/transactions/{{.ID}}/edit" class="btn btn-secondary btn-small tx-edit" aria-label="Buchung bearbeiten"><span class="tx-edit-label">Bearbeiten</span></a>
                     </td>
                 </tr>
                 {{end}}

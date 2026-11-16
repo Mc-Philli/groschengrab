@@ -1254,3 +1254,147 @@ td.num .cell-sub {
 .card .table-scroll + form {
     margin-top: 1.25rem;
 }
+
+/* ---------- Bearbeiten, Daueraufträge, Konten ---------- */
+[hidden] {
+    display: none !important;
+}
+
+.plain-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.plain-link:hover {
+    text-decoration: underline;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.card h2.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.recurring-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.recurring-item {
+    border-bottom: 1px solid var(--border);
+}
+
+.recurring-item:last-child {
+    border-bottom: none;
+}
+
+.recurring-item > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.recurring-item > summary::-webkit-details-marker {
+    display: none;
+}
+
+.recurring-item > summary::after {
+    content: "›";
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    transition: transform 0.15s;
+}
+
+.recurring-item[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.recurring-item > summary .num {
+    margin-left: auto;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.recurring-item[open] {
+    padding-bottom: 1rem;
+}
+
+.recurring-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.recurring-title {
+    font-weight: 600;
+}
+
+.recurring-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.recurring-error {
+    color: var(--negative);
+    font-size: 0.82rem;
+}
+
+.recurring-item.paused > summary {
+    opacity: 0.55;
+}
+
+.recurring-item form + form,
+.recurring-item .hint-text + form {
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 720px) {
+    /* Ganze Buchungszeile antippbar; statt Knopf nur ein Pfeil */
+    table.tx-table tr {
+        position: relative;
+    }
+
+    table.tx-table .tx-link::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+    }
+
+    table.tx-table .col-action {
+        align-self: center;
+        justify-self: end;
+        width: auto;
+    }
+
+    table.tx-table .tx-edit {
+        border: none;
+        background: none;
+        padding: 0 0.1rem !important;
+        color: var(--text-muted);
+    }
+
+    table.tx-table .tx-edit-label {
+        display: none;
+    }
+
+    table.tx-table .tx-edit::before {
+        content: "›";
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+}

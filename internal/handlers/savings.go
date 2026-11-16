@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -179,24 +178,6 @@ func (h *Handlers) RunDueSavingsPlans(today string) (executed int, errs []string
 }
 
 var savingsRunMu sync.Mutex
-
-// StartSavingsPlanScheduler prüft kurz nach dem Start und danach stündlich,
-// ob Sparpläne fällig sind.
-func (h *Handlers) StartSavingsPlanScheduler() {
-	go func() {
-		time.Sleep(20 * time.Second)
-		for {
-			n, errs := h.RunDueSavingsPlans(time.Now().Format("2006-01-02"))
-			if n > 0 {
-				log.Printf("Sparpläne: %d Ausführung(en) gebucht", n)
-			}
-			for _, e := range errs {
-				log.Printf("Sparpläne: %s", e)
-			}
-			time.Sleep(time.Hour)
-		}
-	}()
-}
 
 // CreateSavingsPlan verarbeitet das Formular "Sparplan anlegen".
 func (h *Handlers) CreateSavingsPlan(w http.ResponseWriter, r *http.Request) {
