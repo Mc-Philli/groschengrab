@@ -41,6 +41,7 @@ func main() {
 		"initial":   handlers.Initial,
 		"schedule":  handlers.ScheduleFields,
 		"sub":       func(a, b float64) float64 { return a - b },
+		"dict":      handlers.Dict,
 	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)

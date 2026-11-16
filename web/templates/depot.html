@@ -168,9 +168,7 @@
             <details class="add-plan">
                 <summary class="btn btn-primary">＋ Sparplan anlegen</summary>
                 <form method="POST" action="/savings-plans" class="form-grid">
-                    <label>Depot<br>
-                        <input type="text" name="depot" list="depot-names" placeholder="z. B. WillBe" required>
-                    </label>
+                    {{template "depot-select" (dict "Names" .DepotNames "Required" true)}}
                     <label>Betrag pro Monat (CHF)<br>
                         <input type="text" name="amount" inputmode="decimal" placeholder="z. B. 500" required>
                     </label>
@@ -216,9 +214,7 @@
             </div>
             <div id="ticker-search-results"></div>
             <form method="POST" action="/holdings" class="form-grid" id="holding-form">
-                <label>Depot<br>
-                    <input type="text" name="depot" list="depot-names" placeholder="z. B. Saxo">
-                </label>
+                {{template "depot-select" (dict "Names" .DepotNames "Required" false)}}
                 <label>Ticker<br>
                     <input type="text" name="ticker" placeholder="z. B. VWRL.SW" required>
                 </label>
@@ -254,9 +250,28 @@
         form.elements.name.value = btn.dataset.name;
         form.elements.quantity.focus();
     });
+    // „Neues Depot …" blendet das Namensfeld ein.
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches('.depot-select')) return;
+        var input = e.target.parentNode.querySelector('.depot-new');
+        input.hidden = e.target.value !== '__new__';
+        input.required = !input.hidden;
+        if (!input.hidden) input.focus();
+    });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{static "charts.js"}}"></script>
 </body>
 </html>
+{{end}}
+
+{{define "depot-select"}}
+<label>Depot<br>
+    <select name="depot" class="depot-select" {{if .Required}}required{{end}}>
+        {{range .Names}}<option value="{{.}}">{{.}}</option>{{end}}
+        {{if not .Required}}<option value="">– ohne Depot –</option>{{end}}
+        <option value="__new__" {{if not .Names}}selected{{end}}>＋ Neues Depot …</option>
+    </select>
+    <input type="text" name="depot_new" class="depot-new" placeholder="Name des neuen Depots" {{if .Names}}hidden{{else if .Required}}required{{end}}>
+</label>
 {{end}}

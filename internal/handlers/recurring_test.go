@@ -121,3 +121,20 @@ func TestUpdateTransactionAdjustsBalances(t *testing.T) {
 		t.Errorf("unbekannte Buchung: err = %v, want sql.ErrNoRows", err)
 	}
 }
+
+func TestRecurringBookFromSkipsPastDates(t *testing.T) {
+	// Miete läuft seit Januar, angelegt am 16.11.: nichts nachbuchen,
+	// nächster Termin ist der 1.12.
+	r := models.RecurringTransaction{StartDate: "2026-01-01", EveryMonths: 1, BookFrom: "2026-11-16"}
+	if got := nextRecurringDate(r, "2026-11-30"); got != "" {
+		t.Errorf("vor dem 1.12.: got %q, want nichts", got)
+	}
+	if got := nextRecurringDate(r, "9999-12-31"); got != "2026-12-01" {
+		t.Errorf("nächster Termin %q, want 2026-12-01", got)
+	}
+	// Termin am Tag des Anlegens wird gebucht.
+	r.BookFrom = "2026-11-01"
+	if got := nextRecurringDate(r, "2026-11-16"); got != "2026-11-01" {
+		t.Errorf("Termin am Anlegetag: got %q, want 2026-11-01", got)
+	}
+}
