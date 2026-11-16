@@ -280,7 +280,12 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 
 	f, msg := parseTxForm(r)
 	if msg != "" {
-		redirectWithMessage(w, r, "/", "error", msg)
+		// Fehler zurück auf die Seite, von der das Formular kam.
+		back := "/"
+		if r.FormValue("from") == "new" {
+			back = "/transactions/new"
+		}
+		redirectWithMessage(w, r, back, "error", msg)
 		return
 	}
 	rec := f.Record

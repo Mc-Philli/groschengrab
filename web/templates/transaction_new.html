@@ -1,0 +1,42 @@
+{{define "transaction_new.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    {{template "appmeta"}}
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
+    <title>Neue Buchung – Haushalts-App</title>
+    <link rel="stylesheet" href="{{static "style.css"}}">
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+
+        <a href="/" class="back-link">← Zurück</a>
+
+        <section class="card">
+            <h2 class="card-title-row">Neue Buchung <a href="/recurring" class="btn btn-secondary btn-small">🔁 Daueraufträge</a></h2>
+            {{if .HasAccounts}}
+            <form method="POST" action="/transactions" class="form-grid">
+                <input type="hidden" name="from" value="new">
+                {{template "txfields" .Form}}
+                <label>Datum<br>
+                    <input type="date" name="booked_at" value="{{.Today}}">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Buchen</button>
+                </div>
+            </form>
+            {{else}}
+            <p class="empty-hint">Bitte zuerst in den <a href="/settings">Einstellungen</a> ein Konto anlegen.</p>
+            {{end}}
+        </section>
+    </main>
+</body>
+</html>
+{{end}}

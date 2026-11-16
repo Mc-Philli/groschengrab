@@ -337,3 +337,37 @@ func (h *Handlers) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	redirectWithMessage(w, r, "/settings", "success", msg)
 }
+
+// NewTransactionPage ist das Buchungsformular als eigene Seite, erreichbar
+// über den runden +-Knopf auf dem Handy.
+func (h *Handlers) NewTransactionPage(w http.ResponseWriter, r *http.Request) {
+	accounts, err := h.loadAccounts()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	categories, err := h.loadCategories()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data := struct {
+		Form            txFormView
+		HasAccounts     bool
+		Today           string
+		ErrorMsg        string
+		SuccessMsg      string
+		Page            string
+		CurrentUserName string
+	}{
+		Form:            newTxFormView(accounts, categories, "expense", firstAccountID(accounts), 0, 0, "", ""),
+		HasAccounts:     len(accounts) > 0,
+		Today:           today(),
+		ErrorMsg:        r.URL.Query().Get("error"),
+		Page:            "newtx",
+		CurrentUserName: currentUser(r).Name,
+	}
+	if err := h.tmpl.ExecuteTemplate(w, "transaction_new.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
