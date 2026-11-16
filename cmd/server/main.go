@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"strconv"
@@ -99,6 +100,7 @@ func main() {
 	mux.HandleFunc("GET /api/networth-history", h.RequireAuth(h.NetWorthHistory))
 	mux.HandleFunc("GET /api/depot-history", h.RequireAuth(h.DepotHistory))
 	mux.HandleFunc("GET /api/sankey", h.RequireAuth(h.SankeyData))
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	// Standardmäßig Port 8080. Für eine zweite Test-Instanz neben dem
