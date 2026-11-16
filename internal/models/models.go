@@ -134,4 +134,27 @@ type TransactionView struct {
 	Category      string
 	Description   string
 	Kind          string
+	Recurring     bool // aus einem Dauerauftrag gebucht
+}
+
+// RecurringTransaction ist ein Dauerauftrag: eine Buchung, die jeden
+// (bzw. jeden 3./6./12.) Monat automatisch erfasst wird.
+type RecurringTransaction struct {
+	ID             int64
+	AccountID      int64
+	AccountName    string
+	ToAccountID    int64 // 0 = kein Transfer
+	ToAccountName  string
+	UserID         int64
+	Kind           string
+	Amount         float64
+	Category       string
+	Description    string
+	EveryMonths    int
+	StartDate      string
+	EndDate        string
+	Active         bool
+	LastExecutedOn string
+	LastError      string
+	NextDue        string
 }

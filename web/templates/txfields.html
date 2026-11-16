@@ -1,0 +1,32 @@
+{{define "txfields"}}
+<label>Art<br>
+    <select name="kind" required
+            onchange="this.form.querySelector('.to-account-field').hidden = this.value !== 'transfer'; this.form.querySelector('.category-field').hidden = this.value === 'transfer'">
+        <option value="expense" {{if eq .Kind "expense"}}selected{{end}}>Ausgabe</option>
+        <option value="income" {{if eq .Kind "income"}}selected{{end}}>Einnahme</option>
+        <option value="transfer" {{if eq .Kind "transfer"}}selected{{end}}>Transfer (zwischen Konten)</option>
+    </select>
+</label>
+<label>Konto<br>
+    <select name="account_id" required>
+        {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $.AccountID}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+</label>
+<label class="to-account-field" {{if ne .Kind "transfer"}}hidden{{end}}>Zielkonto<br>
+    <select name="to_account_id">
+        {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $.ToAccountID}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+</label>
+<label>Betrag (CHF)<br>
+    <input type="text" name="amount" value="{{.Amount}}" placeholder="z. B. 12.50" inputmode="decimal" required>
+</label>
+<label class="category-field" {{if eq .Kind "transfer"}}hidden{{end}}>Kategorie<br>
+    <select name="category">
+        <option value="">– keine –</option>
+        {{range .Categories}}<option value="{{.}}" {{if eq . $.Category}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+</label>
+<label>Beschreibung<br>
+    <input type="text" name="description" value="{{.Description}}">
+</label>
+{{end}}

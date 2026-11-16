@@ -61,12 +61,18 @@ gzip-komprimiert unter `/opt/household-app/backups/` und werden nach 30 Tagen
 gelöscht. Jede Kopie wird vor dem Speichern auf Integrität geprüft.
 
 **Einmalig einrichten** (auf einem Pi, der schon läuft; bei einer
-Neuinstallation erledigt das `setup-pi.sh`):
+Neuinstallation erledigt das `setup-pi.sh`). Wichtig: **bevor** der erste
+Deploy mit Backup-Schritt läuft, sonst bricht der Deploy mit
+„sqlite3 fehlt" ab. Das Skript liegt im Arbeitsordner des Runners
+(z. B. `~/actions-runner/_work/<repo>/<repo>/`) oder in einem eigenen Klon:
 
 ```bash
-cd ~/<repo-ordner> && git pull
+cd <ordner-mit-dem-repo> && git pull
 ./deploy/setup-backup.sh
 ```
+
+Danach den fehlgeschlagenen Deploy in GitHub Actions über „Re-run jobs"
+erneut starten.
 
 **Nützliche Befehle:**
 
@@ -132,11 +138,14 @@ Fertig:
 - Total Vermögen und Vermögensentwicklung = Konten + Depots + sonstige Assets
 - Diagramme: Vermögens- und Depotverlauf, Sankey Einnahmen/Ausgaben
 - Nächtliches Datenbank-Backup auf dem Pi (lokal) inkl. Wiederherstellung
+- Handytaugliches Layout mit Dunkelmodus
+- Buchungen bearbeiten (Salden werden automatisch korrigiert), Konten
+  umbenennen und Saldo mit der Bank abgleichen
+- Daueraufträge (monatlich, vierteljährlich, halbjährlich, jährlich), werden
+  automatisch gebucht, auch verpasste Termine
 
 Offen:
 
-- Handytaugliches Layout (v. a. breite Tabellen auf der Depot-Seite)
-- Buchungen bearbeiten, Konten umbenennen, wiederkehrende Buchungen
 - CSV-Import für WIR-Kontoauszüge
 - Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
   einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich

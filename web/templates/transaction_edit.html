@@ -1,0 +1,47 @@
+{{define "transaction_edit.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
+    <title>Buchung bearbeiten – Haushalts-App</title>
+    <link rel="stylesheet" href="{{static "style.css"}}">
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+
+        <a href="/#buchungen" class="back-link">← Zurück</a>
+
+        <section class="card">
+            <h2>Buchung bearbeiten</h2>
+            <form method="POST" action="/transactions/{{.ID}}" class="form-grid">
+                {{template "txfields" .Form}}
+                <label>Datum<br>
+                    <input type="date" name="booked_at" value="{{.BookedAt}}" required>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+            <p class="hint-text">
+                Erfasst von {{.UserName}}{{if .Recurring}} · 🔁 aus einem <a href="/recurring">Dauerauftrag</a>{{end}}.
+                Die Kontosalden werden automatisch angepasst.
+            </p>
+        </section>
+
+        <section class="card">
+            <form method="POST" action="/transactions/{{.ID}}/delete"
+                  onsubmit="return confirm('Diese Buchung wirklich löschen?')">
+                <button type="submit" class="btn btn-danger">Buchung löschen</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}

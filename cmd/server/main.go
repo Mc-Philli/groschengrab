@@ -39,14 +39,16 @@ func main() {
 		"assetType": handlers.AssetTypeLabel,
 		"qty":       handlers.FormatQuantity,
 		"initial":   handlers.Initial,
+		"schedule":  handlers.ScheduleFields,
+		"sub":       func(a, b float64) float64 { return a - b },
 	}).ParseGlob("web/templates/*.html")
 	if err != nil {
 		log.Fatalf("Templates konnten nicht geladen werden: %v", err)
 	}
 
 	h := handlers.New(database, tmpl)
-	// Prüft stündlich, ob Sparpläne fällig sind, und bucht sie.
-	h.StartSavingsPlanScheduler()
+	// Prüft stündlich, ob Daueraufträge oder Sparpläne fällig sind, und bucht sie.
+	h.StartScheduler()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /login", h.LoginPage)
@@ -60,9 +62,17 @@ func main() {
 	mux.HandleFunc("GET /settings", h.RequireAuth(h.Settings))
 	mux.HandleFunc("GET /depot", h.RequireAuth(h.Depot))
 	mux.HandleFunc("POST /accounts", h.RequireAuth(h.CreateAccount))
+	mux.HandleFunc("POST /accounts/{id}", h.RequireAuth(h.UpdateAccount))
 	mux.HandleFunc("POST /accounts/{id}/delete", h.RequireAuth(h.DeleteAccount))
 	mux.HandleFunc("POST /transactions", h.RequireAuth(h.CreateTransaction))
+	mux.HandleFunc("GET /transactions/{id}/edit", h.RequireAuth(h.EditTransactionPage))
+	mux.HandleFunc("POST /transactions/{id}", h.RequireAuth(h.UpdateTransaction))
 	mux.HandleFunc("POST /transactions/{id}/delete", h.RequireAuth(h.DeleteTransaction))
+	mux.HandleFunc("GET /recurring", h.RequireAuth(h.RecurringPage))
+	mux.HandleFunc("POST /recurring", h.RequireAuth(h.CreateRecurring))
+	mux.HandleFunc("POST /recurring/{id}", h.RequireAuth(h.UpdateRecurring))
+	mux.HandleFunc("POST /recurring/{id}/toggle", h.RequireAuth(h.ToggleRecurring))
+	mux.HandleFunc("POST /recurring/{id}/delete", h.RequireAuth(h.DeleteRecurring))
 	mux.HandleFunc("POST /categories", h.RequireAuth(h.CreateCategory))
 	mux.HandleFunc("POST /categories/{id}/delete", h.RequireAuth(h.DeleteCategory))
 	mux.HandleFunc("POST /holdings", h.RequireAuth(h.CreateHolding))

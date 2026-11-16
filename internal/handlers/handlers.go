@@ -70,6 +70,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Accounts         []models.Account
 		Transactions     []models.TransactionView
 		Categories       []models.Category
+		NewForm          txFormView
 		TotalAssets      float64
 		AccountsTotal    float64
 		OtherAssetsTotal float64
@@ -84,6 +85,7 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Accounts:         accounts,
 		Transactions:     transactions,
 		Categories:       categories,
+		NewForm:          newTxFormView(accounts, categories, "expense", firstAccountID(accounts), 0, 0, "", ""),
 		TotalAssets:      totalAssets,
 		AccountsTotal:    accountsTotal,
 		OtherAssetsTotal: otherAssetsTotal,
@@ -99,6 +101,20 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 	if err := h.tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// firstAccountID wählt das vorausgewählte Konto im Buchungsformular: das
+// erste Girokonto, sonst das erste Konto überhaupt.
+func firstAccountID(accounts []models.Account) int64 {
+	for _, a := range accounts {
+		if a.Type == "Girokonto" {
+			return a.ID
+		}
+	}
+	if len(accounts) == 0 {
+		return 0
+	}
+	return accounts[0].ID
 }
 
 // Settings zeigt die Einstellungsseite: Konto anlegen, Kategorien verwalten,
@@ -126,6 +142,7 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 		Categories      []models.Category
 		Accounts        []models.Account
 		Rules           []models.CategoryRule
+		AccountTypes    []string
 		ErrorMsg        string
 		SuccessMsg      string
 		Page            string
@@ -134,6 +151,7 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 		Categories:      categories,
 		Accounts:        accounts,
 		Rules:           rules,
+		AccountTypes:    accountTypes,
 		ErrorMsg:        r.URL.Query().Get("error"),
 		SuccessMsg:      r.URL.Query().Get("success"),
 		Page:            "settings",
@@ -165,7 +183,7 @@ func (h *Handlers) loadAccounts() ([]models.Account, error) {
 
 func (h *Handlers) loadTransactions() ([]models.TransactionView, error) {
 	rows, err := h.db.Query(`
-		SELECT t.id, a.name, COALESCE(b.name, ''), u.name, t.amount, t.booked_at, t.category, t.description, t.kind
+		SELECT t.id, a.name, COALESCE(b.name, ''), u.name, t.amount, t.booked_at, COALESCE(t.category, ''), COALESCE(t.description, ''), t.kind, t.recurring_id IS NOT NULL
 		FROM transactions t
 		JOIN accounts a ON a.id = t.account_id
 		LEFT JOIN accounts b ON b.id = t.to_account_id
@@ -180,7 +198,7 @@ func (h *Handlers) loadTransactions() ([]models.TransactionView, error) {
 	var list []models.TransactionView
 	for rows.Next() {
 		var tv models.TransactionView
-		if err := rows.Scan(&tv.ID, &tv.AccountName, &tv.ToAccountName, &tv.UserName, &tv.Amount, &tv.BookedAt, &tv.Category, &tv.Description, &tv.Kind); err != nil {
+		if err := rows.Scan(&tv.ID, &tv.AccountName, &tv.ToAccountName, &tv.UserName, &tv.Amount, &tv.BookedAt, &tv.Category, &tv.Description, &tv.Kind, &tv.Recurring); err != nil {
 			return nil, err
 		}
 		list = append(list, tv)
@@ -247,6 +265,7 @@ type transactionRecord struct {
 	Amount      float64
 	Category    string
 	Description string
+	RecurringID int64 // gesetzt, wenn die Buchung aus einem Dauerauftrag stammt
 }
 
 // CreateTransaction verarbeitet das Formular "Buchung erfassen" und
@@ -258,52 +277,17 @@ func (h *Handlers) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accountID, err := strconv.ParseInt(r.FormValue("account_id"), 10, 64)
-	if err != nil {
-		redirectWithMessage(w, r, "/", "error", "Bitte ein Konto auswählen.")
+	f, msg := parseTxForm(r)
+	if msg != "" {
+		redirectWithMessage(w, r, "/", "error", msg)
 		return
 	}
-
-	kind := r.FormValue("kind")
-	if kind != "income" && kind != "expense" && kind != "transfer" {
-		redirectWithMessage(w, r, "/", "error", "Ungültige Buchungsart.")
-		return
+	rec := f.Record
+	rec.BookedAt = strings.TrimSpace(r.FormValue("booked_at"))
+	if rec.BookedAt == "" {
+		rec.BookedAt = time.Now().Format("2006-01-02")
 	}
-
-	amount, err := parseAmount(r.FormValue("amount"))
-	if err != nil || amount <= 0 {
-		redirectWithMessage(w, r, "/", "error", "Bitte einen gültigen Betrag größer 0 angeben.")
-		return
-	}
-
-	var toAccountID sql.NullInt64
-	if kind == "transfer" {
-		toID, err := strconv.ParseInt(r.FormValue("to_account_id"), 10, 64)
-		if err != nil {
-			redirectWithMessage(w, r, "/", "error", "Bitte ein Zielkonto für den Transfer auswählen.")
-			return
-		}
-		if toID == accountID {
-			redirectWithMessage(w, r, "/", "error", "Quell- und Zielkonto müssen unterschiedlich sein.")
-			return
-		}
-		toAccountID = sql.NullInt64{Int64: toID, Valid: true}
-	}
-
-	bookedAt := strings.TrimSpace(r.FormValue("booked_at"))
-	if bookedAt == "" {
-		bookedAt = time.Now().Format("2006-01-02")
-	}
-
-	user := currentUser(r)
-
-	rec := transactionRecord{
-		BookedAt:    bookedAt,
-		Kind:        kind,
-		Amount:      amount,
-		Category:    strings.TrimSpace(r.FormValue("category")),
-		Description: strings.TrimSpace(r.FormValue("description")),
-	}
+	accountID, toAccountID, user := f.AccountID, f.ToAccountID, currentUser(r)
 
 	if err := h.insertTransactionAndUpdateBalance(accountID, toAccountID, user.ID, rec); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -337,33 +321,38 @@ func (h *Handlers) insertTransactionAndUpdateBalance(accountID int64, toAccountI
 // h.db laufen, da die Datenbank nur eine Verbindung zulässt.
 func insertTransactionTx(tx *sql.Tx, accountID int64, toAccountID sql.NullInt64, userID int64, rec transactionRecord, importHash string) error {
 	hash := sql.NullString{String: importHash, Valid: importHash != ""}
+	recurring := sql.NullInt64{Int64: rec.RecurringID, Valid: rec.RecurringID != 0}
 
 	if _, err := tx.Exec(
-		`INSERT INTO transactions (account_id, to_account_id, user_id, amount, booked_at, category, description, kind, import_hash)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		accountID, toAccountID, userID, rec.Amount, rec.BookedAt, rec.Category, rec.Description, rec.Kind, hash,
+		`INSERT INTO transactions (account_id, to_account_id, user_id, amount, booked_at, category, description, kind, import_hash, recurring_id)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		accountID, toAccountID, userID, rec.Amount, rec.BookedAt, rec.Category, rec.Description, rec.Kind, hash, recurring,
 	); err != nil {
 		return err
 	}
+	return applyBalanceTx(tx, rec.Kind, rec.Amount, accountID, toAccountID, 1)
+}
 
-	switch rec.Kind {
+// applyBalanceTx verbucht die Wirkung einer Buchung auf die Kontosalden.
+// sign = 1 bucht sie, sign = -1 macht sie rückgängig (Löschen, Bearbeiten).
+func applyBalanceTx(tx *sql.Tx, kind string, amount float64, accountID int64, toAccountID sql.NullInt64, sign float64) error {
+	adjust := func(id int64, delta float64) error {
+		_, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, delta, id)
+		return err
+	}
+	switch kind {
 	case "income":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, rec.Amount, accountID); err != nil {
-			return err
-		}
+		return adjust(accountID, sign*amount)
 	case "expense":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, rec.Amount, accountID); err != nil {
-			return err
-		}
+		return adjust(accountID, -sign*amount)
 	case "transfer":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, rec.Amount, accountID); err != nil {
+		if err := adjust(accountID, -sign*amount); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, rec.Amount, toAccountID.Int64); err != nil {
-			return err
+		if toAccountID.Valid {
+			return adjust(toAccountID.Int64, sign*amount)
 		}
 	}
-
 	return nil
 }
 
@@ -426,28 +415,9 @@ func (h *Handlers) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch kind {
-	case "expense":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, amount, accountID); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	case "income":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, amount, accountID); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	case "transfer":
-		if _, err := tx.Exec(`UPDATE accounts SET balance = balance + ? WHERE id = ?`, amount, accountID); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if toAccountID.Valid {
-			if _, err := tx.Exec(`UPDATE accounts SET balance = balance - ? WHERE id = ?`, amount, toAccountID.Int64); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
+	if err := applyBalanceTx(tx, kind, amount, accountID, toAccountID, -1); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -474,9 +444,21 @@ func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if count > 0 {
-		redirectWithMessage(w, r, "/", "error", fmt.Sprintf(
+		redirectWithMessage(w, r, "/settings", "error", fmt.Sprintf(
 			"Konto kann nicht gelöscht werden: %d Buchung(en) hängen noch daran. Bitte zuerst diese Buchungen löschen.", count,
 		))
+		return
+	}
+	var plans int
+	if err := h.db.QueryRow(`SELECT
+			(SELECT COUNT(*) FROM recurring_transactions WHERE account_id = ?1 OR to_account_id = ?1) +
+			(SELECT COUNT(*) FROM savings_plans WHERE account_id = ?1)`, id).Scan(&plans); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if plans > 0 {
+		redirectWithMessage(w, r, "/settings", "error",
+			"Konto kann nicht gelöscht werden: Ein Dauerauftrag oder Sparplan bucht noch darauf. Bitte diesen zuerst löschen oder ändern.")
 		return
 	}
 
@@ -485,7 +467,7 @@ func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectWithMessage(w, r, "/", "success", "Konto gelöscht.")
+	redirectWithMessage(w, r, "/settings", "success", "Konto gelöscht.")
 }
 
 // CreateCategory verarbeitet das Formular "Kategorie anlegen" auf der

@@ -20,28 +20,68 @@
         <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
         {{end}}
 
-        <section class="card">
-            <h2>Neues Konto anlegen</h2>
-            <form method="POST" action="/accounts" class="form-grid">
-                <label>Name<br>
-                    <input type="text" name="name" required>
-                </label>
-                <label>Typ<br>
-                    <select name="type">
-                        <option value="Girokonto">Girokonto</option>
-                        <option value="Sparkonto">Sparkonto</option>
-                        <option value="Bar">Bar</option>
-                        <option value="Depot">Depot</option>
-                        <option value="Sonstiges">Sonstiges</option>
-                    </select>
-                </label>
-                <label>Startsaldo (CHF)<br>
-                    <input type="text" name="start_balance" value="0" placeholder="z. B. 1'000.00">
-                </label>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Konto anlegen</button>
-                </div>
-            </form>
+        <section class="card" id="konten">
+            <h2>Konten</h2>
+            {{if .Accounts}}
+            <div class="recurring-list">
+                {{range .Accounts}}
+                <details class="recurring-item" id="konto-{{.ID}}">
+                    <summary>
+                        <span class="recurring-main">
+                            <span class="recurring-title">{{.Name}}</span>
+                            <span class="recurring-meta">{{.Type}}</span>
+                        </span>
+                        <span class="num nowrap {{if lt .Balance 0.0}}amount-expense{{end}}">{{chf .Balance}}</span>
+                    </summary>
+                    <form method="POST" action="/accounts/{{.ID}}" class="form-grid">
+                        <label>Name<br>
+                            <input type="text" name="name" value="{{.Name}}" required>
+                        </label>
+                        <label>Typ<br>
+                            <select name="type">
+                                {{$type := .Type}}{{$known := false}}
+                                {{range $.AccountTypes}}<option value="{{.}}" {{if eq . $type}}selected{{$known = true}}{{end}}>{{.}}</option>{{end}}
+                                {{if not $known}}<option value="{{$type}}" selected>{{$type}}</option>{{end}}
+                            </select>
+                        </label>
+                        <label>Saldo laut Bank (optional)<br>
+                            <input type="text" name="balance" inputmode="decimal" placeholder="{{chf .Balance}}">
+                        </label>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </div>
+                    </form>
+                    <p class="hint-text">Weicht der Saldo laut Bank ab, wird die Differenz als Buchung „Saldo-Abgleich" mit heutigem Datum erfasst.</p>
+                    <form method="POST" action="/accounts/{{.ID}}/delete"
+                          onsubmit="return confirm('Konto «{{.Name}}» wirklich löschen?')">
+                        <button type="submit" class="btn btn-danger btn-small">Konto löschen</button>
+                    </form>
+                </details>
+                {{end}}
+            </div>
+            {{else}}
+            <p class="empty-hint">Noch keine Konten angelegt.</p>
+            {{end}}
+
+            <details class="add-plan" {{if not .Accounts}}open{{end}}>
+                <summary class="btn btn-primary">＋ Konto anlegen</summary>
+                <form method="POST" action="/accounts" class="form-grid">
+                    <label>Name<br>
+                        <input type="text" name="name" required>
+                    </label>
+                    <label>Typ<br>
+                        <select name="type">
+                            {{range .AccountTypes}}<option value="{{.}}">{{.}}</option>{{end}}
+                        </select>
+                    </label>
+                    <label>Startsaldo (CHF)<br>
+                        <input type="text" name="start_balance" value="0" placeholder="z. B. 1'000.00" inputmode="decimal">
+                    </label>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Konto anlegen</button>
+                    </div>
+                </form>
+            </details>
         </section>
 
         <section class="card">
@@ -139,6 +179,13 @@
             <p class="hint-text">Das Import-Format entspricht genau dem Export. Am einfachsten: erst exportieren, in Excel/Numbers bearbeiten, dann wieder importieren. Konten beim Buchungs-Import müssen bereits existieren (Zuordnung über den Namen).</p>
         </section>
     </main>
+    <script>
+        // Link "Konto antippen" von der Startseite: passendes Konto aufklappen.
+        (function () {
+            var el = location.hash && document.getElementById(location.hash.slice(1));
+            if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView({block: 'center'}); }
+        })();
+    </script>
 </body>
 </html>
 {{end}}

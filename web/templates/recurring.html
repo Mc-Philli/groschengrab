@@ -1,0 +1,118 @@
+{{define "recurring.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
+    <title>Daueraufträge – Haushalts-App</title>
+    <link rel="stylesheet" href="{{static "style.css"}}">
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <a href="/" class="back-link">← Start</a>
+
+        <section class="card total-assets-card">
+            <div class="total-assets-label">Daueraufträge pro Monat</div>
+            <div class="total-assets-value">{{chf (sub .MonthlyIn .MonthlyOut)}}</div>
+            <div class="stat-tiles">
+                <div class="stat-tile">
+                    <span class="stat-label">⬆️ Einnahmen</span>
+                    <span class="stat-value amount-income">{{chf .MonthlyIn}}</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-label">⬇️ Ausgaben</span>
+                    <span class="stat-value amount-expense">−{{chf .MonthlyOut}}</span>
+                </div>
+            </div>
+            <p class="hint-text">Vierteljährliche, halbjährliche und jährliche Beträge sind auf einen Monat umgerechnet. Pausierte zählen nicht.</p>
+        </section>
+
+        <section class="card">
+            <h2>Daueraufträge</h2>
+            {{if .Rows}}
+            <div class="recurring-list">
+                {{range .Rows}}
+                <details class="recurring-item {{if not .Active}}paused{{end}}">
+                    <summary>
+                        <span class="recurring-main">
+                            <span class="recurring-title">🔁 {{.Title}}</span>
+                            <span class="recurring-meta">
+                                {{.Interval}} · {{.AccountName}}{{if eq .Kind "transfer"}} → {{.ToAccountName}}{{end}}
+                                {{if .Active}}{{if .NextDue}} · nächste {{.NextDue}}{{else}} · beendet{{end}}{{else}} · ⏸ pausiert{{end}}
+                            </span>
+                            {{if .LastError}}<span class="recurring-error">⚠️ {{.LastError}}</span>{{end}}
+                        </span>
+                        <span class="num nowrap {{if eq .Kind "expense"}}amount-expense{{else if eq .Kind "income"}}amount-income{{else}}amount-transfer{{end}}">{{txchf .Kind .Amount}}</span>
+                    </summary>
+                    <form method="POST" action="/recurring/{{.ID}}" class="form-grid">
+                        {{template "txfields" .Form}}
+                        {{template "recurring-schedule" (schedule $.Intervals .EveryMonths .StartDate .EndDate)}}
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </div>
+                    </form>
+                    <div class="plan-actions">
+                        <form method="POST" action="/recurring/{{.ID}}/toggle">
+                            <button type="submit" class="btn btn-small">{{if .Active}}⏸ Pausieren{{else}}▶ Fortsetzen{{end}}</button>
+                        </form>
+                        <form method="POST" action="/recurring/{{.ID}}/delete"
+                              onsubmit="return confirm('Dauerauftrag löschen? Bereits gebuchte Buchungen bleiben erhalten.')">
+                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                        </form>
+                    </div>
+                    <p class="hint-text">Änderungen gelten ab dem nächsten Termin, bereits gebuchte Buchungen bleiben wie sie sind.{{if .LastExecutedOn}} Zuletzt gebucht am {{.LastExecutedOn}}.{{end}}</p>
+                </details>
+                {{end}}
+            </div>
+            {{else}}
+            <p class="empty-hint">Noch keine Daueraufträge. Typisch sind Miete, Lohn, Krankenkasse, Handy-Abo oder Steuern.</p>
+            {{end}}
+
+            {{if .HasAccounts}}
+            <details class="add-plan" {{if not .Rows}}open{{end}}>
+                <summary class="btn btn-primary">＋ Dauerauftrag anlegen</summary>
+                <form method="POST" action="/recurring" class="form-grid">
+                    {{template "txfields" .NewForm}}
+                    {{template "recurring-schedule" (schedule .Intervals 1 .Today "")}}
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Dauerauftrag speichern</button>
+                    </div>
+                </form>
+                <p class="hint-text">
+                    Gebucht wird immer am Tag der ersten Buchung (z. B. jeden 25.); in kürzeren Monaten am Monatsletzten.
+                    Liegt die erste Buchung in der Vergangenheit, werden die verpassten Termine sofort nachgebucht –
+                    wenn deine Kontostände schon stimmen, wähle also den nächsten Termin.
+                </p>
+            </details>
+            {{else}}
+            <p class="empty-hint">Bitte zuerst ein Konto anlegen.</p>
+            {{end}}
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "recurring-schedule"}}
+<label>Rhythmus<br>
+    <select name="every_months">
+        {{range .Intervals}}<option value="{{.Months}}" {{if eq .Months $.Every}}selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+</label>
+<label>Erste Buchung am<br>
+    <input type="date" name="start_date" value="{{.Start}}" required>
+</label>
+<label>Enddatum (optional)<br>
+    <input type="date" name="end_date" value="{{.End}}">
+</label>
+{{end}}
