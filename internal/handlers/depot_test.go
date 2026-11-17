@@ -170,3 +170,19 @@ func mustExec(t *testing.T, h *Handlers, q string, args ...any) {
 		t.Fatal(err)
 	}
 }
+
+func TestSavingsPlanBookFromSkipsPastDates(t *testing.T) {
+	// Sparplan seit September, am 17.11. erfasst: erst am 5.12. kaufen.
+	p := models.SavingsPlan{StartDate: "2026-09-01", DayOfMonth: 5, BookFrom: "2026-11-17"}
+	if got := nextExecutionDate(p, "2026-11-30"); got != "" {
+		t.Errorf("vor dem 5.12.: got %q, want nichts", got)
+	}
+	if got := nextExecutionDate(p, "9999-12-31"); got != "2026-12-05" {
+		t.Errorf("nächster Termin %q, want 2026-12-05", got)
+	}
+	// Ausführungstag = Tag des Anlegens wird gebucht.
+	p.DayOfMonth = 17
+	if got := nextExecutionDate(p, "2026-11-17"); got != "2026-11-17" {
+		t.Errorf("Termin am Anlegetag: got %q, want 2026-11-17", got)
+	}
+}

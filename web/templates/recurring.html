@@ -84,7 +84,7 @@
                 <summary class="btn btn-primary">＋ Dauerauftrag anlegen</summary>
                 <form method="POST" action="/recurring" class="form-grid">
                     {{template "txfields" .NewForm}}
-                    {{template "recurring-schedule" (schedule .Intervals 1 .Today "")}}
+                    {{template "recurring-schedule" (schedule .Intervals 1 "" "")}}
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Dauerauftrag speichern</button>
                     </div>

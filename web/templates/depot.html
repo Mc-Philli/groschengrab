@@ -95,7 +95,7 @@
                                 <form method="POST" action="/positions/move" class="inline-form">
                                     <input type="hidden" name="depot" value="{{.Depot}}">
                                     <input type="hidden" name="ticker" value="{{.Ticker}}">
-                                    <label>Depot <input type="text" name="new_depot" value="{{.Depot}}" list="depot-names" size="10"></label>
+                                    {{template "depot-select" (dict "Names" $.DepotNames "Field" "new_depot" "Selected" .Depot "Edit" true "Required" false)}}
                                     <label>Name <input type="text" name="name" value="{{.Name}}" size="22"></label>
                                     <button type="submit" class="btn btn-small">Speichern</button>
                                 </form>
@@ -156,6 +156,16 @@
                         <button type="submit" class="btn btn-danger btn-small">Löschen</button>
                     </form>
                 </div>
+                <details class="plan-edit">
+                    <summary>Bearbeiten</summary>
+                    <form method="POST" action="/savings-plans/{{.ID}}" class="form-grid">
+                        {{template "plan-fields" (dict "Names" $.DepotNames "Accounts" $.Accounts "Plan" .)}}
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </div>
+                    </form>
+                    <p class="hint-text">Änderungen gelten ab dem nächsten Ausführungstag, bereits gebuchte Käufe bleiben wie sie sind.</p>
+                </details>
             </div>
             {{end}}
             <form method="POST" action="/savings-plans/run">
@@ -169,37 +179,13 @@
             <details class="add-plan">
                 <summary class="btn btn-primary">＋ Sparplan anlegen</summary>
                 <form method="POST" action="/savings-plans" class="form-grid">
-                    {{template "depot-select" (dict "Names" .DepotNames "Required" true)}}
-                    <label>Betrag pro Monat (CHF)<br>
-                        <input type="text" name="amount" inputmode="decimal" placeholder="z. B. 500" required>
-                    </label>
-                    <label>Ausführungstag (1–28)<br>
-                        <input type="number" name="day_of_month" min="1" max="28" value="1" required>
-                    </label>
-                    <label>Erste Ausführung ab<br>
-                        <input type="date" name="start_date" value="{{.Today}}" required>
-                    </label>
-                    <label>Konto belasten (optional)<br>
-                        <select name="account_id">
-                            <option value="">– nicht belasten –</option>
-                            {{range .Accounts}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
-                        </select>
-                    </label>
-                    <div class="plan-items">
-                        <div class="hint-text">ETFs und Anteil in % (zusammen 100 %)</div>
-                        {{range $.PlanItemRows}}
-                        <div class="inline-form">
-                            <input type="text" name="item_ticker" list="tickers" placeholder="Ticker" size="12">
-                            <input type="text" name="item_weight" inputmode="decimal" placeholder="%" size="5">
-                        </div>
-                        {{end}}
-                    </div>
+                    {{template "plan-fields" (dict "Names" .DepotNames "Accounts" .Accounts "Plan" .NewPlan)}}
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Sparplan speichern</button>
                     </div>
                 </form>
                 <p class="hint-text">
-                    Liegt die erste Ausführung in der Vergangenheit, werden die verpassten Monate sofort nachgebucht.
+                    Gekauft wird erst, wenn der Ausführungstag da ist – frühere Termine werden nicht nachgebucht, weil diese Käufe meist schon erfasst sind.
                     Die Anzahl wird mit dem Schlusskurs des Ausführungstags berechnet (ohne Gebühren) – gleiche sie ab und zu über „abgleichen" mit der Broker-App ab.
                     Mit Kontobelastung wird der Betrag als Ausgabe „Sparplan" gebucht.
                 </p>
@@ -215,7 +201,7 @@
             </div>
             <div id="ticker-search-results"></div>
             <form method="POST" action="/holdings" class="form-grid" id="holding-form">
-                {{template "depot-select" (dict "Names" .DepotNames "Required" false)}}
+                {{template "depot-select" (dict "Names" .DepotNames "Field" "depot" "Selected" "" "Required" false)}}
                 <label>Ticker<br>
                     <input type="text" name="ticker" placeholder="z. B. VWRL.SW" required>
                 </label>
@@ -238,7 +224,6 @@
             <p class="hint-text">Die ISIN steht in der Broker-App beim jeweiligen ETF. Schweizer Börsenplätze (SIX, Endung „.SW") werden bevorzugt angezeigt. Den Kaufpreis in der Währung des Tickers angeben.</p>
         </section>
 
-        <datalist id="depot-names">{{range .DepotNames}}<option value="{{.}}">{{end}}</datalist>
         <datalist id="tickers">{{range .Tickers}}<option value="{{.}}">{{end}}</datalist>
     </main>
     <script>
@@ -267,12 +252,42 @@
 {{end}}
 
 {{define "depot-select"}}
+{{/* Felder: Names, Field (Formularname), Selected (aktuelles Depot),
+     Edit (Bearbeiten: leeres Selected heißt „ohne Depot"), Required */}}
 <label>Depot<br>
-    <select name="depot" class="depot-select" {{if .Required}}required{{end}}>
-        {{range .Names}}<option value="{{.}}">{{.}}</option>{{end}}
-        {{if not .Required}}<option value="">– ohne Depot –</option>{{end}}
+    <select name="{{.Field}}" class="depot-select" {{if .Required}}required{{end}}>
+        {{range .Names}}<option value="{{.}}" {{if eq . $.Selected}}selected{{end}}>{{.}}</option>{{end}}
+        {{if not .Required}}<option value="" {{if and .Edit (eq .Selected "")}}selected{{end}}>– ohne Depot –</option>{{end}}
         <option value="__new__" {{if not .Names}}selected{{end}}>＋ Neues Depot …</option>
     </select>
-    <input type="text" name="depot_new" class="depot-new" placeholder="Name des neuen Depots" {{if .Names}}hidden{{else if .Required}}required{{end}}>
+    <input type="text" name="{{.Field}}_new" class="depot-new" placeholder="Name des neuen Depots" {{if .Names}}hidden{{else if .Required}}required{{end}}>
 </label>
+{{end}}
+
+{{define "plan-fields"}}
+{{template "depot-select" (dict "Names" .Names "Field" "depot" "Selected" .Plan.Depot "Required" true)}}
+<label>Betrag pro Monat (CHF)<br>
+    <input type="text" name="amount" inputmode="decimal" placeholder="z. B. 500" value="{{if .Plan.Amount}}{{printf "%.2f" .Plan.Amount}}{{end}}" required>
+</label>
+<label>Ausführungstag (1–28)<br>
+    <input type="number" name="day_of_month" min="1" max="28" value="{{.Plan.DayOfMonth}}" required>
+</label>
+<label>Erste Ausführung ab<br>
+    <input type="date" name="start_date" value="{{.Plan.StartDate}}" required>
+</label>
+<label>Konto belasten (optional)<br>
+    <select name="account_id">
+        <option value="">– nicht belasten –</option>
+        {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $.Plan.AccountIDValue}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+</label>
+<div class="plan-items">
+    <div class="hint-text">ETFs und Anteil in % (zusammen 100 %)</div>
+    {{range .Plan.ItemRows}}
+    <div class="inline-form">
+        <input type="text" name="item_ticker" list="tickers" placeholder="Ticker" size="12" value="{{.Ticker}}">
+        <input type="text" name="item_weight" inputmode="decimal" placeholder="%" size="5" value="{{if .Weight}}{{printf "%g" .Weight}}{{end}}">
+    </div>
+    {{end}}
+</div>
 {{end}}

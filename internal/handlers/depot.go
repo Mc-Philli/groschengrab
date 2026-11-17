@@ -48,7 +48,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		Missing         int
 		SavingsPlans    []models.SavingsPlan
 		Accounts        []models.Account
-		PlanItemRows    []int
+		NewPlan         models.SavingsPlan
 		ErrorMsg        string
 		SuccessMsg      string
 		Page            string
@@ -63,7 +63,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		Missing:         missing,
 		SavingsPlans:    plans,
 		Accounts:        accounts,
-		PlanItemRows:    []int{1, 2, 3, 4, 5},
+		NewPlan:         models.SavingsPlan{DayOfMonth: 1, StartDate: today()},
 		ErrorMsg:        r.URL.Query().Get("error"),
 		SuccessMsg:      r.URL.Query().Get("success"),
 		Page:            "depot",
@@ -290,7 +290,7 @@ func (h *Handlers) CreateHolding(w http.ResponseWriter, r *http.Request) {
 		redirectWithMessage(w, r, "/depot", "error", "Ticker darf nicht leer sein.")
 		return
 	}
-	depot := depotFormValue(r)
+	depot := depotFormValue(r, "depot")
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	quantity, err := parseAmount(r.FormValue("quantity"))
@@ -405,7 +405,7 @@ func (h *Handlers) MovePosition(w http.ResponseWriter, r *http.Request) {
 	}
 	from := r.FormValue("depot")
 	ticker := r.FormValue("ticker")
-	to := strings.TrimSpace(r.FormValue("new_depot"))
+	to := depotFormValue(r, "new_depot")
 	name := strings.TrimSpace(r.FormValue("name"))
 
 	if _, err := h.db.Exec(`UPDATE holdings SET depot = ?, name = ? WHERE depot = ? AND ticker = ?`,
@@ -445,8 +445,13 @@ func (h *Handlers) TickerSearch(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `<p class="hint-text">Suche fehlgeschlagen: %s</p>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
+	// Yahoo kennt manche ISINs nicht (z. B. LU0446734104). Dann über die
+	// Börsenkürzel der ISIN suchen.
+	if len(results) == 0 && stocks.IsISIN(q) {
+		results, _ = stocks.SearchISIN(q)
+	}
 	if len(results) == 0 {
-		fmt.Fprint(w, `<p class="hint-text">Nichts gefunden. Tipp: Bei einer ISIN ohne Treffer nach dem Fondsnamen suchen.</p>`)
+		fmt.Fprint(w, `<p class="hint-text">Nichts gefunden. Tipp: Nach dem Fondsnamen suchen oder das Börsenkürzel direkt ins Feld „Ticker" tippen (SIX-Kürzel mit „.SW", z. B. EUREUA.SW).</p>`)
 		return
 	}
 	fmt.Fprint(w, `<ul class="search-results">`)
@@ -459,12 +464,12 @@ func (h *Handlers) TickerSearch(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `</ul>`)
 }
 
-// depotFormValue liest das Depot aus der Auswahlliste; bei „Neues Depot …"
-// steht der Name im Textfeld depot_new.
-func depotFormValue(r *http.Request) string {
-	depot := strings.TrimSpace(r.FormValue("depot"))
+// depotFormValue liest das Depot aus der Auswahlliste field; bei
+// „Neues Depot …" steht der Name im Textfeld field+"_new".
+func depotFormValue(r *http.Request, field string) string {
+	depot := strings.TrimSpace(r.FormValue(field))
 	if depot == "__new__" {
-		depot = strings.TrimSpace(r.FormValue("depot_new"))
+		depot = strings.TrimSpace(r.FormValue(field + "_new"))
 	}
 	return depot
 }
