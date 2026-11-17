@@ -152,14 +152,17 @@ Fertig:
 - Daueraufträge (monatlich, vierteljährlich, halbjährlich, jährlich), werden
   automatisch am Termin gebucht (Termine vor dem Anlegen werden nicht nachgebucht)
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
+  (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 - Als App auf dem Homescreen installierbar (Icon, Vollbild)
 - ISIN-Suche mit Rückfall über OpenFIGI (für ISINs, die Yahoo nicht kennt)
 - Sparpläne bearbeiten; Sparpläne kaufen erst ab dem Tag des Anlegens
-  (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
+- WIR-Kontoauszug (PDF „Kontobewegungen") importieren: Vorschau mit
+  Kategorie per Regel, Umbuchung auf ein anderes Konto wählbar, Saldo-Kontrolle
+  gegen den Auszug; schon importierte (Auftragsnummer) und vermutlich schon von
+  Hand erfasste Buchungen werden erkannt
 
 Offen:
 
-- CSV-Import für WIR-Kontoauszüge
 - Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
   einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich
   in der Oberfläche, bevor gebucht wird

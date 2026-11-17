@@ -455,7 +455,10 @@ input, select, textarea {
 .form-grid select,
 .inline-form input,
 .inline-form select,
-.ticker-search input {
+.ticker-search input,
+.import-main input,
+.import-main select,
+.import-tools input {
     width: 100%;
     margin-top: 0.3rem;
     padding: 0.6rem 0.75rem;
@@ -1524,4 +1527,172 @@ td.num .cell-sub {
 }
 .plan-edit[open] > summary {
     margin-bottom: 0.75rem;
+}
+
+/* Kontoauszug-Import */
+.import-summary {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+}
+
+.import-balance {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.5rem;
+}
+
+.import-balance div {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+}
+
+.import-balance dt {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.import-balance dd {
+    margin: 0.15rem 0 0;
+    font-size: 1.1rem;
+    font-weight: 650;
+}
+
+.import-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.import-tools label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.import-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.import-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.import-row:last-child {
+    border-bottom: none;
+}
+
+.import-row.off .import-main,
+.import-row.imported .import-main {
+    opacity: 0.5;
+}
+
+.import-check {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.15rem;
+    flex: none;
+}
+
+.import-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.import-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.import-head .num {
+    white-space: nowrap;
+    flex: none;
+}
+
+.import-meta,
+.import-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.import-row.duplicate .import-note {
+    color: var(--negative);
+}
+
+.import-main input,
+.import-main select {
+    box-sizing: border-box;
+    margin-top: 0;
+    padding: 0.45rem 0.65rem;
+}
+
+.import-submit .btn-primary {
+    flex: 1;
+}
+
+.import-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.import-submit {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 720px) {
+    /* Saldo-Übersicht kompakt als Liste */
+    .import-balance {
+        grid-template-columns: 1fr;
+        gap: 0;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.25rem 0.75rem;
+    }
+
+    .import-balance div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        background: none;
+        border: none;
+        border-radius: 0;
+        padding: 0.4rem 0;
+    }
+
+    .import-balance div + div {
+        border-top: 1px solid var(--border);
+    }
+
+    .import-balance dd {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    /* Über der unteren Navigation festhalten */
+    .import-submit {
+        bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+        padding-bottom: 0.75rem;
+    }
 }
