@@ -154,6 +154,9 @@ Fertig:
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
   (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 - Als App auf dem Homescreen installierbar (Icon, Vollbild)
+- Bereiche auf Start- und Depot-Seite einklappbar (Zustand pro Gerät gemerkt);
+  der +-Knopf auf dem Handy öffnet ein Menü: Ausgabe, Einnahme, Umbuchung,
+  Dauerauftrag, Depot-Kauf, Sparplan, Asset, Kontoauszug
 - ISIN-Suche mit Rückfall über OpenFIGI (für ISINs, die Yahoo nicht kennt)
 - Sparpläne bearbeiten; Sparpläne kaufen erst ab dem Tag des Anlegens
 - WIR-Kontoauszug (PDF „Kontobewegungen") importieren: Vorschau mit

@@ -351,6 +351,11 @@ func (h *Handlers) NewTransactionPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// Vorauswahl der Art, z. B. aus dem Menü des +-Knopfs (?kind=income).
+	kind := r.URL.Query().Get("kind")
+	if kind != "income" && kind != "transfer" {
+		kind = "expense"
+	}
 	data := struct {
 		Form            txFormView
 		HasAccounts     bool
@@ -360,7 +365,7 @@ func (h *Handlers) NewTransactionPage(w http.ResponseWriter, r *http.Request) {
 		Page            string
 		CurrentUserName string
 	}{
-		Form:            newTxFormView(accounts, categories, "expense", firstAccountID(accounts), 0, 0, "", ""),
+		Form:            newTxFormView(accounts, categories, kind, firstAccountID(accounts), 0, 0, "", ""),
 		HasAccounts:     len(accounts) > 0,
 		Today:           today(),
 		ErrorMsg:        r.URL.Query().Get("error"),
