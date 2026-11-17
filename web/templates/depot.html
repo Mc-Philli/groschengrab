@@ -57,7 +57,10 @@
 
         {{range .Depots}}
         <section class="card depot-card">
-            <h2>{{.Name}} <span class="hint-text">{{chf .ValueCHF}}</span></h2>
+            <details class="collapsible" data-key="depot-{{.Name}}" data-default="open">
+            <summary>
+                <h2>{{.Name}} <span class="collapsible-meta">{{len .Positions}} · {{chf .ValueCHF}}</span></h2>
+            </summary>
             <div class="table-scroll">
             <table class="stack">
                 <tr>
@@ -122,6 +125,7 @@
                 {{end}}
             </table>
             </div>
+            </details>
         </section>
         {{else}}
         <section class="card">
@@ -129,8 +133,11 @@
         </section>
         {{end}}
 
-        <section class="card">
-            <h2>Sparpläne</h2>
+        <section class="card" id="sparplaene">
+            <details class="collapsible" data-key="sparplaene">
+            <summary>
+                <h2>Sparpläne {{if .SavingsPlans}}<span class="collapsible-meta">{{len .SavingsPlans}}</span>{{end}}</h2>
+            </summary>
             {{if .SavingsPlans}}
             {{range .SavingsPlans}}
             <div class="plan">
@@ -176,7 +183,7 @@
             <p class="empty-hint">Noch keine Sparpläne.</p>
             {{end}}
 
-            <details class="add-plan">
+            <details class="add-plan" id="sparplan-neu">
                 <summary class="btn btn-primary">＋ Sparplan anlegen</summary>
                 <form method="POST" action="/savings-plans" class="form-grid">
                     {{template "plan-fields" (dict "Names" .DepotNames "Accounts" .Accounts "Plan" .NewPlan)}}
@@ -190,10 +197,14 @@
                     Mit Kontobelastung wird der Betrag als Ausgabe „Sparplan" gebucht.
                 </p>
             </details>
+            </details>
         </section>
 
-        <section class="card">
-            <h2>Kauf erfassen</h2>
+        <section class="card" id="kauf">
+            <details class="collapsible" data-key="kauf">
+            <summary>
+                <h2>Kauf erfassen</h2>
+            </summary>
             <div class="inline-form ticker-search">
                 <input type="text" name="q" id="ticker-search-q" placeholder="ISIN oder Name suchen, z. B. IE00BK5BQT80">
                 <button type="button" class="btn btn-small"
@@ -222,6 +233,7 @@
                 </div>
             </form>
             <p class="hint-text">Die ISIN steht in der Broker-App beim jeweiligen ETF. Schweizer Börsenplätze (SIX, Endung „.SW") werden bevorzugt angezeigt. Den Kaufpreis in der Währung des Tickers angeben.</p>
+            </details>
         </section>
 
         <datalist id="tickers">{{range .Tickers}}<option value="{{.}}">{{end}}</datalist>

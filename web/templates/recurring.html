@@ -80,7 +80,7 @@
             {{end}}
 
             {{if .HasAccounts}}
-            <details class="add-plan" {{if not .Rows}}open{{end}}>
+            <details class="add-plan" id="neu" {{if not .Rows}}open{{end}}>
                 <summary class="btn btn-primary">＋ Dauerauftrag anlegen</summary>
                 <form method="POST" action="/recurring" class="form-grid">
                     {{template "txfields" .NewForm}}

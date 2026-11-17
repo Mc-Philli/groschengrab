@@ -33,9 +33,74 @@
         </div>
     </div>
 </header>
-{{if and (ne .Page "newtx") (ne .Page "import")}}
-<a href="/transactions/new" class="fab" aria-label="Neue Buchung erfassen" title="Neue Buchung">
+{{if ne .Page "import"}}
+<div class="fab-backdrop" hidden></div>
+<nav class="fab-menu" id="fab-menu" hidden aria-label="Neu erfassen">
+    <a href="/transactions/new"><span>💸</span>Ausgabe</a>
+    <a href="/transactions/new?kind=income"><span>💰</span>Einnahme</a>
+    <a href="/transactions/new?kind=transfer"><span>🔄</span>Umbuchung</a>
+    <a href="/recurring#neu"><span>🔁</span>Dauerauftrag</a>
+    <a href="/depot#kauf"><span>📈</span>Depot-Kauf</a>
+    <a href="/depot#sparplan-neu"><span>📅</span>Sparplan</a>
+    <a href="/assets#asset-neu"><span>🏡</span>Asset</a>
+    <a href="/import"><span>📄</span>Kontoauszug importieren</a>
+</nav>
+<button type="button" class="fab" aria-label="Neu erfassen" aria-expanded="false" aria-controls="fab-menu" title="Neu erfassen">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-</a>
+</button>
 {{end}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // +-Knopf: öffnet das Menü „Neu erfassen".
+    var fab = document.querySelector('.fab');
+    if (fab) {
+        var menu = document.getElementById('fab-menu');
+        var backdrop = document.querySelector('.fab-backdrop');
+        var setOpen = function (open) {
+            menu.hidden = backdrop.hidden = !open;
+            fab.classList.toggle('open', open);
+            fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        fab.addEventListener('click', function () { setOpen(menu.hidden); });
+        backdrop.addEventListener('click', function () { setOpen(false); });
+        menu.addEventListener('click', function () { setOpen(false); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+        window.addEventListener('pageshow', function () { setOpen(false); });
+    }
+
+    // Einklappbare Bereiche: Zustand pro Gerät merken (data-key), Vorgabe
+    // über data-default="open".
+    document.querySelectorAll('details.collapsible[data-key]').forEach(function (d) {
+        var key = d.dataset.key + '-open', saved = null;
+        try { saved = localStorage.getItem(key); } catch (e) {}
+        d.open = saved === null ? d.dataset.default === 'open' : saved === '1';
+        d.addEventListener('toggle', function () {
+            try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) {}
+        });
+    });
+
+    // Sprungziel (#kauf, #sparplan-neu, …): umgebende Bereiche aufklappen.
+    function openTarget(id) {
+        var el = id && document.getElementById(id);
+        if (!el) return;
+        var inner = el.matches('details') ? el : el.querySelector(':scope > details.collapsible');
+        for (var n = inner || el; n; n = n.parentElement) {
+            if (n.tagName === 'DETAILS') n.open = true;
+        }
+        (el.closest('.card') || el).scrollIntoView({ block: 'start' });
+    }
+    openTarget(location.hash.slice(1));
+    // Der Browser springt nach dem Laden selbst zum Anker (bis an den oberen
+    // Rand, unter die Kopfzeile) – danach nochmal sauber zur Karte scrollen.
+    window.addEventListener('load', function () {
+        setTimeout(function () { openTarget(location.hash.slice(1)); }, 0);
+    });
+    window.addEventListener('hashchange', function () { openTarget(location.hash.slice(1)); });
+    document.addEventListener('click', function (e) {
+        // Gleiches Sprungziel nochmal angetippt: hashchange feuert dann nicht.
+        var a = e.target.closest('a[href*="#"]');
+        if (a && a.hash && a.hash === location.hash && a.pathname === location.pathname) openTarget(a.hash.slice(1));
+    });
+});
+</script>
 {{end}}

@@ -57,7 +57,7 @@
         </section>
 
         <section class="card" id="konten">
-            <details class="collapsible" id="konten-details">
+            <details class="collapsible" data-key="konten">
             <summary>
                 <h2>Konten <span class="collapsible-meta">{{len .Accounts}} · {{chf .AccountsTotal}}</span></h2>
             </summary>
@@ -79,8 +79,12 @@
             </details>
         </section>
 
-        <section class="card">
-            <h2 class="card-title-row">Buchung erfassen <a href="/recurring" class="btn btn-secondary btn-small">🔁 Daueraufträge</a></h2>
+        <section class="card" id="erfassen">
+            <details class="collapsible" data-key="erfassen">
+            <summary>
+                <h2>Buchung erfassen</h2>
+            </summary>
+            <p class="section-actions"><a href="/recurring" class="btn btn-secondary btn-small">🔁 Daueraufträge</a></p>
             {{if .Accounts}}
             <form method="POST" action="/transactions" class="form-grid">
                 {{template "txfields" .NewForm}}
@@ -97,10 +101,15 @@
             {{else}}
             <p class="empty-hint">Bitte zuerst ein Konto anlegen.</p>
             {{end}}
+            </details>
         </section>
 
         <section class="card" id="buchungen">
-            <h2 class="card-title-row">Letzte Buchungen <a href="/import" class="btn btn-secondary btn-small">📄 Auszug importieren</a></h2>
+            <details class="collapsible" data-key="buchungen" data-default="open">
+            <summary>
+                <h2>Letzte Buchungen {{if .Transactions}}<span class="collapsible-meta">{{len .Transactions}}</span>{{end}}</h2>
+            </summary>
+            <p class="section-actions"><a href="/import" class="btn btn-secondary btn-small">📄 Auszug importieren</a></p>
             {{if .Transactions}}
             <table class="tx-table">
                 <tr>
@@ -127,26 +136,11 @@
             {{else}}
             <p class="empty-hint">Noch keine Buchungen erfasst.</p>
             {{end}}
+            </details>
         </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{static "charts.js"}}"></script>
-    <script>
-    // Kontenübersicht: eingeklappt, bis man sie aufklappt; der Zustand
-    // bleibt auf diesem Gerät gespeichert. Die Kachel „Konten" klappt sie auf.
-    (function () {
-        var d = document.getElementById('konten-details');
-        if (!d) return;
-        try { d.open = localStorage.getItem('konten-open') === '1'; } catch (e) {}
-        d.addEventListener('toggle', function () {
-            try { localStorage.setItem('konten-open', d.open ? '1' : '0'); } catch (e) {}
-        });
-        function openFromHash() { if (location.hash === '#konten') d.open = true; }
-        openFromHash();
-        window.addEventListener('hashchange', openFromHash);
-        document.querySelector('a[href="#konten"]').addEventListener('click', function () { d.open = true; });
-    })();
-    </script>
 </body>
 </html>
 {{end}}
