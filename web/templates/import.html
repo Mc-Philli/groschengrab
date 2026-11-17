@@ -1,0 +1,179 @@
+{{define "import.html"}}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    {{template "appmeta"}}
+    <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141312" media="(prefers-color-scheme: dark)">
+    <title>Kontoauszug importieren – Haushalts-App</title>
+    <link rel="stylesheet" href="{{static "style.css"}}">
+</head>
+<body>
+    {{template "nav" .}}
+    <main>
+        {{if .ErrorMsg}}
+        <div class="banner banner-error">⚠️ {{.ErrorMsg}}</div>
+        {{end}}
+        {{if .SuccessMsg}}
+        <div class="banner banner-success">✅ {{.SuccessMsg}}</div>
+        {{end}}
+
+        <a href="/" class="back-link">← Start</a>
+
+        {{if not .Statement}}
+        <section class="card">
+            <h2>Kontoauszug importieren</h2>
+            {{if .Accounts}}
+            <form method="POST" action="/import/statement" enctype="multipart/form-data" class="form-grid">
+                <label>Konto<br>
+                    <select name="account_id" required>
+                        {{range .Accounts}}<option value="{{.ID}}" {{if eq .ID $.AccountID}}selected{{end}}>{{.Name}}</option>{{end}}
+                    </select>
+                </label>
+                <label>WIR-Auszug (PDF)<br>
+                    <input type="file" name="file" accept=".pdf,application/pdf" required>
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Vorschau anzeigen</button>
+                </div>
+            </form>
+            <p class="hint-text">Im WIR E-Banking unter Konto → Kontobewegungen den gewünschten Zeitraum wählen und als PDF herunterladen. Du siehst danach erst eine Vorschau und entscheidest, welche Buchungen übernommen werden. Schon importierte Buchungen erkennt die App an der Auftragsnummer, du kannst also auch überlappende Zeiträume hochladen.</p>
+            {{else}}
+            <p class="empty-hint">Bitte zuerst ein Konto in den <a href="/settings">Einstellungen</a> anlegen.</p>
+            {{end}}
+        </section>
+        {{else}}
+        {{$st := .Statement}}
+        <form method="POST" action="/import/statement/confirm" id="import-form">
+            <input type="hidden" name="account_id" value="{{.AccountID}}">
+            <input type="hidden" name="bank_balance" value="{{printf "%.2f" $st.ClosingBalance}}">
+
+            <section class="card">
+                <h2>Vorschau: {{.AccountName}}</h2>
+                <p class="import-summary">
+                    {{len .Rows}} Buchungen vom {{.FromLabel}} bis {{.ToLabel}}
+                    {{if .ImportedCount}} · {{.ImportedCount}} schon importiert{{end}}
+                    {{if .DuplicateCount}} · {{.DuplicateCount}} vielleicht schon erfasst{{end}}
+                </p>
+                {{if $st.BalanceMismatches}}
+                <p class="banner banner-error">⚠️ Bei {{$st.BalanceMismatches}} Buchung(en) passen Betrag und Saldo im Auszug nicht zusammen. Bitte die Beträge kontrollieren.</p>
+                {{end}}
+                <dl class="import-balance">
+                    <div><dt>Saldo laut Auszug</dt><dd class="num">{{chf $st.ClosingBalance}}</dd></div>
+                    <div><dt>Saldo in der App jetzt</dt><dd class="num">{{chf .AccountBalance}}</dd></div>
+                    <div><dt>Saldo nach Import</dt><dd class="num" id="balance-after" data-now="{{printf "%.2f" .AccountBalance}}" data-bank="{{printf "%.2f" $st.ClosingBalance}}">–</dd></div>
+                </dl>
+                <p class="hint-text" id="balance-hint"></p>
+
+                <div class="import-tools">
+                    <label>Nur Buchungen ab<br>
+                        <input type="date" id="from-date" min="{{$st.From}}" max="{{$st.To}}">
+                    </label>
+                    <button type="button" class="btn btn-secondary btn-small" data-select="all">Alle</button>
+                    <button type="button" class="btn btn-secondary btn-small" data-select="none">Keine</button>
+                </div>
+                <p class="hint-text">Hast du den Kontosaldo in der App schon auf den aktuellen Stand der Bank gesetzt, würden ältere Buchungen doppelt zählen. Dann hier ein Datum setzen oder hinterher den Saldo in den Einstellungen abgleichen.</p>
+            </section>
+
+            <section class="card">
+                <datalist id="cat-list">{{range .Categories}}<option value="{{.Name}}">{{end}}</datalist>
+                <div class="import-list">
+                    {{range .Rows}}{{$i := .Index}}{{$credit := .Entry.Credit}}
+                    <div class="import-row{{if .Imported}} imported{{else if .Duplicate}} duplicate{{end}}" data-date="{{.Entry.Date}}">
+                        <input type="checkbox" name="sel" value="{{$i}}" class="import-check" aria-label="Übernehmen"
+                               data-amount="{{printf "%.2f" .Entry.Amount}}" data-credit="{{if .Entry.Credit}}1{{end}}"
+                               {{if .Selected}}checked{{end}} {{if .Imported}}disabled{{end}}>
+                        <div class="import-main">
+                            <div class="import-head">
+                                <span class="import-meta">{{.DateLabel}} · {{.Entry.Type}}</span>
+                                <span class="num nowrap {{if .Entry.Credit}}amount-income{{else}}amount-expense{{end}}">{{if .Entry.Credit}}+{{else}}−{{end}}{{chf .Entry.Amount}}</span>
+                            </div>
+                            {{if .Imported}}
+                            <div class="import-desc-text">{{.Description}}</div>
+                            <div class="import-note">✓ schon importiert</div>
+                            {{else}}
+                            <input type="text" name="desc_{{$i}}" value="{{.Description}}" class="import-desc" aria-label="Beschreibung">
+                            <div class="import-fields">
+                                <input type="text" name="cat_{{$i}}" value="{{.Category}}" list="cat-list" placeholder="Kategorie" aria-label="Kategorie">
+                                <select name="other_{{$i}}" aria-label="Art">
+                                    <option value="">{{if .Entry.Credit}}Einnahme{{else}}Ausgabe{{end}}</option>
+                                    {{range $.Accounts}}{{if ne .ID $.AccountID}}
+                                    <option value="{{.ID}}">Umbuchung {{if $credit}}von{{else}}auf{{end}} {{.Name}}</option>
+                                    {{end}}{{end}}
+                                </select>
+                            </div>
+                            {{if .Duplicate}}<div class="import-note">⚠️ {{.Duplicate}}</div>{{end}}
+                            <input type="hidden" name="date_{{$i}}" value="{{.Entry.Date}}">
+                            <input type="hidden" name="amount_{{$i}}" value="{{printf "%.2f" .Entry.Amount}}">
+                            <input type="hidden" name="credit_{{$i}}" value="{{if .Entry.Credit}}1{{end}}">
+                            <input type="hidden" name="hash_{{$i}}" value="{{.Hash}}">
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </section>
+
+            <div class="import-submit">
+                <button type="submit" class="btn btn-primary" id="import-submit">Importieren</button>
+                <a href="/import?account={{.AccountID}}" class="btn btn-secondary">Abbrechen</a>
+            </div>
+        </form>
+
+        <script>
+        (function () {
+            var form = document.getElementById('import-form');
+            var after = document.getElementById('balance-after');
+            var hint = document.getElementById('balance-hint');
+            var submit = document.getElementById('import-submit');
+            var fmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' });
+            var checks = form.querySelectorAll('.import-check:not([disabled])');
+
+            function update() {
+                var sum = parseFloat(after.dataset.now), n = 0;
+                checks.forEach(function (c) {
+                    c.closest('.import-row').classList.toggle('off', !c.checked);
+                    if (!c.checked) return;
+                    n++;
+                    var a = parseFloat(c.dataset.amount);
+                    sum += c.dataset.credit ? a : -a;
+                });
+                var bank = parseFloat(after.dataset.bank);
+                after.textContent = fmt.format(sum);
+                var ok = Math.abs(sum - bank) < 0.005;
+                after.classList.toggle('amount-income', ok);
+                after.classList.toggle('amount-expense', !ok);
+                hint.textContent = ok ? '✓ Passt genau zum Saldo laut Auszug.'
+                    : 'Differenz zum Auszug: ' + fmt.format(sum - bank) + '.';
+                submit.textContent = n ? 'Importieren (' + n + ')' : 'Importieren';
+                submit.disabled = n === 0;
+            }
+
+            form.addEventListener('change', function (e) {
+                if (e.target.classList.contains('import-check')) update();
+            });
+            document.getElementById('from-date').addEventListener('change', function (e) {
+                var from = e.target.value;
+                checks.forEach(function (c) {
+                    var row = c.closest('.import-row');
+                    if (from) c.checked = row.dataset.date >= from && !row.classList.contains('duplicate');
+                });
+                update();
+            });
+            form.querySelectorAll('[data-select]').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    var all = b.dataset.select === 'all';
+                    checks.forEach(function (c) { c.checked = all; });
+                    update();
+                });
+            });
+            update();
+        })();
+        </script>
+        {{end}}
+    </main>
+</body>
+</html>
+{{end}}
