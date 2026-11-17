@@ -86,6 +86,7 @@ func main() {
 	mux.HandleFunc("GET /api/ticker-search", h.RequireAuth(h.TickerSearch))
 	mux.HandleFunc("POST /savings-plans", h.RequireAuth(h.CreateSavingsPlan))
 	mux.HandleFunc("POST /savings-plans/run", h.RequireAuth(h.RunSavingsPlansNow))
+	mux.HandleFunc("POST /savings-plans/{id}", h.RequireAuth(h.UpdateSavingsPlan))
 	mux.HandleFunc("POST /savings-plans/{id}/toggle", h.RequireAuth(h.ToggleSavingsPlan))
 	mux.HandleFunc("POST /savings-plans/{id}/delete", h.RequireAuth(h.DeleteSavingsPlan))
 	mux.HandleFunc("GET /assets", h.RequireAuth(h.Assets))

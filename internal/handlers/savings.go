@@ -21,7 +21,7 @@ import (
 // "Anzahl abgleichen" aus.
 
 func (h *Handlers) loadSavingsPlans() ([]models.SavingsPlan, error) {
-	rows, err := h.db.Query(`SELECT p.id, p.depot, p.amount, p.day_of_month, p.start_date, p.account_id,
+	rows, err := h.db.Query(`SELECT p.id, p.depot, p.amount, p.day_of_month, p.start_date, COALESCE(p.book_from, ''), p.account_id,
 			COALESCE(a.name, ''), p.user_id, p.active, COALESCE(p.last_executed_on, ''), COALESCE(p.last_error, '')
 		FROM savings_plans p LEFT JOIN accounts a ON a.id = p.account_id
 		ORDER BY p.depot, p.id`)
@@ -32,7 +32,7 @@ func (h *Handlers) loadSavingsPlans() ([]models.SavingsPlan, error) {
 	for rows.Next() {
 		var p models.SavingsPlan
 		var acc sql.NullInt64
-		if err := rows.Scan(&p.ID, &p.Depot, &p.Amount, &p.DayOfMonth, &p.StartDate, &acc,
+		if err := rows.Scan(&p.ID, &p.Depot, &p.Amount, &p.DayOfMonth, &p.StartDate, &p.BookFrom, &acc,
 			&p.AccountName, &p.UserID, &p.Active, &p.LastExecutedOn, &p.LastError); err != nil {
 			rows.Close()
 			return nil, err
@@ -68,7 +68,8 @@ func (h *Handlers) loadSavingsPlans() ([]models.SavingsPlan, error) {
 }
 
 // nextExecutionDate liefert den nächsten Ausführungstag nach der letzten
-// Ausführung (bzw. ab Startdatum), sofern er nicht nach until liegt; sonst "".
+// Ausführung (bzw. ab Startdatum, frühestens ab BookFrom), sofern er nicht
+// nach until liegt; sonst "".
 func nextExecutionDate(p models.SavingsPlan, until string) string {
 	begin, err := time.Parse("2006-01-02", p.StartDate)
 	if err != nil {
@@ -79,6 +80,9 @@ func nextExecutionDate(p models.SavingsPlan, until string) string {
 		if err == nil && !last.Before(begin) {
 			begin = last.AddDate(0, 0, 1)
 		}
+	}
+	if from, err := time.Parse("2006-01-02", p.BookFrom); err == nil && from.After(begin) {
+		begin = from
 	}
 	d := time.Date(begin.Year(), begin.Month(), p.DayOfMonth, 0, 0, 0, 0, time.UTC)
 	if d.Before(begin) {
@@ -179,106 +183,173 @@ func (h *Handlers) RunDueSavingsPlans(today string) (executed int, errs []string
 
 var savingsRunMu sync.Mutex
 
-// CreateSavingsPlan verarbeitet das Formular "Sparplan anlegen".
-func (h *Handlers) CreateSavingsPlan(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	fail := func(msg string) { redirectWithMessage(w, r, "/depot", "error", msg) }
+// savingsPlanForm sind die Felder des Sparplan-Formulars (Anlegen und
+// Bearbeiten).
+type savingsPlanForm struct {
+	depot     string
+	amount    float64
+	day       int
+	start     string
+	accountID sql.NullInt64
+	items     []models.SavingsPlanItem
+}
 
-	depot := depotFormValue(r)
-	if depot == "" {
-		fail("Bitte ein Depot auswählen oder ein neues anlegen.")
-		return
+// parseSavingsPlanForm prüft das Formular; msg ist bei Fehleingaben gesetzt.
+func parseSavingsPlanForm(r *http.Request) (f savingsPlanForm, msg string) {
+	if f.depot = depotFormValue(r, "depot"); f.depot == "" {
+		return f, "Bitte ein Depot auswählen oder ein neues anlegen."
 	}
-	amount, err := parseAmount(r.FormValue("amount"))
-	if err != nil || amount <= 0 {
-		fail("Bitte einen gültigen Betrag größer 0 angeben.")
-		return
+	var err error
+	if f.amount, err = parseAmount(r.FormValue("amount")); err != nil || f.amount <= 0 {
+		return f, "Bitte einen gültigen Betrag größer 0 angeben."
 	}
-	day, err := strconv.Atoi(r.FormValue("day_of_month"))
-	if err != nil || day < 1 || day > 28 {
-		fail("Ausführungstag muss zwischen 1 und 28 liegen.")
-		return
+	if f.day, err = strconv.Atoi(r.FormValue("day_of_month")); err != nil || f.day < 1 || f.day > 28 {
+		return f, "Ausführungstag muss zwischen 1 und 28 liegen."
 	}
-	start := strings.TrimSpace(r.FormValue("start_date"))
-	if _, err := time.Parse("2006-01-02", start); err != nil {
-		fail("Bitte ein gültiges Startdatum angeben.")
-		return
+	f.start = strings.TrimSpace(r.FormValue("start_date"))
+	if _, err := time.Parse("2006-01-02", f.start); err != nil {
+		return f, "Bitte ein gültiges Startdatum angeben."
 	}
-	var accountID sql.NullInt64
 	if v := r.FormValue("account_id"); v != "" {
 		id, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			fail("Ungültiges Konto.")
-			return
+			return f, "Ungültiges Konto."
 		}
-		accountID = sql.NullInt64{Int64: id, Valid: true}
+		f.accountID = sql.NullInt64{Int64: id, Valid: true}
 	}
 
 	tickers := r.Form["item_ticker"]
 	weights := r.Form["item_weight"]
-	var items []models.SavingsPlanItem
 	var sum float64
 	for i := range tickers {
 		t := strings.ToUpper(strings.TrimSpace(tickers[i]))
 		if t == "" {
 			continue
 		}
-		if i >= len(weights) {
-			fail("Bitte zu jedem ETF einen Anteil in Prozent angeben.")
-			return
+		if i >= len(weights) || strings.TrimSpace(weights[i]) == "" {
+			return f, fmt.Sprintf("Bitte für %s einen Anteil in Prozent angeben.", t)
 		}
 		wgt, err := parseAmount(weights[i])
 		if err != nil || wgt <= 0 {
-			fail(fmt.Sprintf("Ungültiger Anteil für %s.", t))
-			return
+			return f, fmt.Sprintf("Ungültiger Anteil für %s.", t)
 		}
-		items = append(items, models.SavingsPlanItem{Ticker: t, Weight: wgt})
+		f.items = append(f.items, models.SavingsPlanItem{Ticker: t, Weight: wgt})
 		sum += wgt
 	}
-	if len(items) == 0 {
-		fail("Bitte mindestens einen ETF angeben.")
-		return
+	if len(f.items) == 0 {
+		return f, "Bitte mindestens einen ETF angeben."
 	}
 	if math.Abs(sum-100) > 0.01 {
-		fail(fmt.Sprintf("Die Anteile ergeben zusammen %.2f %% statt 100 %%.", sum))
+		return f, fmt.Sprintf("Die Anteile ergeben zusammen %.2f %% statt 100 %%.", sum)
+	}
+	return f, ""
+}
+
+// saveSavingsPlanItems ersetzt die ETF-Aufteilung eines Sparplans. Der
+// Anzeigename wird von einer vorhandenen Position übernommen.
+func saveSavingsPlanItems(tx *sql.Tx, planID int64, items []models.SavingsPlanItem) error {
+	if _, err := tx.Exec(`DELETE FROM savings_plan_items WHERE plan_id = ?`, planID); err != nil {
+		return err
+	}
+	for _, it := range items {
+		var name string
+		_ = tx.QueryRow(`SELECT name FROM holdings WHERE ticker = ? AND name != '' LIMIT 1`, it.Ticker).Scan(&name)
+		if _, err := tx.Exec(`INSERT INTO savings_plan_items (plan_id, ticker, name, weight) VALUES (?, ?, ?, ?)`,
+			planID, it.Ticker, name, it.Weight); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CreateSavingsPlan verarbeitet das Formular "Sparplan anlegen". Gekauft
+// wird erst ab heute: frühere Termine sind in der Regel schon als Käufe
+// erfasst und werden nicht nachgebucht.
+func (h *Handlers) CreateSavingsPlan(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	f, msg := parseSavingsPlanForm(r)
+	if msg != "" {
+		redirectWithMessage(w, r, "/depot", "error", msg)
+		return
+	}
 	tx, err := h.db.Begin()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
-	res, err := tx.Exec(`INSERT INTO savings_plans (depot, amount, day_of_month, start_date, account_id, user_id) VALUES (?, ?, ?, ?, ?, ?)`,
-		depot, amount, day, start, accountID, currentUser(r).ID)
+	res, err := tx.Exec(`INSERT INTO savings_plans (depot, amount, day_of_month, start_date, book_from, account_id, user_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		f.depot, f.amount, f.day, f.start, today(), f.accountID, currentUser(r).ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	planID, _ := res.LastInsertId()
-	for _, it := range items {
-		var name string
-		_ = tx.QueryRow(`SELECT name FROM holdings WHERE ticker = ? AND name != '' LIMIT 1`, it.Ticker).Scan(&name)
-		if _, err := tx.Exec(`INSERT INTO savings_plan_items (plan_id, ticker, name, weight) VALUES (?, ?, ?, ?)`,
-			planID, it.Ticker, name, it.Weight); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	if err := saveSavingsPlanItems(tx, planID, f.items); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	if err := tx.Commit(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.finishSavingsPlanChange(w, r, "Sparplan angelegt.")
+}
 
-	// Liegen Ausführungstage schon in der Vergangenheit, gleich nachholen.
-	n, errs := h.RunDueSavingsPlans(time.Now().Format("2006-01-02"))
-	msg := "Sparplan angelegt."
+// UpdateSavingsPlan ändert Depot, Betrag, Termin, Konto und ETF-Aufteilung.
+// Bereits gebuchte Käufe bleiben unverändert; die Änderung gilt ab heute.
+func (h *Handlers) UpdateSavingsPlan(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Ungültige ID", http.StatusBadRequest)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	f, msg := parseSavingsPlanForm(r)
+	if msg != "" {
+		redirectWithMessage(w, r, "/depot", "error", msg)
+		return
+	}
+	tx, err := h.db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`UPDATE savings_plans SET depot = ?, amount = ?, day_of_month = ?, start_date = ?,
+			book_from = ?, account_id = ?, last_error = NULL WHERE id = ?`,
+		f.depot, f.amount, f.day, f.start, today(), f.accountID, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		redirectWithMessage(w, r, "/depot", "error", "Sparplan nicht gefunden.")
+		return
+	}
+	if err := saveSavingsPlanItems(tx, id, f.items); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.finishSavingsPlanChange(w, r, "Sparplan gespeichert.")
+}
+
+// finishSavingsPlanChange führt einen heute fälligen Termin gleich aus.
+func (h *Handlers) finishSavingsPlanChange(w http.ResponseWriter, r *http.Request, msg string) {
+	n, errs := h.RunDueSavingsPlans(today())
 	if n > 0 {
-		msg += fmt.Sprintf(" %d vergangene Ausführung(en) nachgebucht.", n)
+		msg += fmt.Sprintf(" %d heute fällige Ausführung(en) gebucht.", n)
 	}
 	if len(errs) > 0 {
 		redirectWithMessage(w, r, "/depot", "error", msg+" Achtung: "+strings.Join(errs, "; "))
@@ -304,8 +375,7 @@ func (h *Handlers) ToggleSavingsPlan(w http.ResponseWriter, r *http.Request) {
 		_, err = h.db.Exec(`UPDATE savings_plans SET active = 0 WHERE id = ?`, id)
 	} else {
 		// Ab heute weiter, ohne die Pause nachzuholen.
-		_, err = h.db.Exec(`UPDATE savings_plans SET active = 1, last_error = NULL,
-			last_executed_on = MAX(COALESCE(last_executed_on, ''), date('now', '-1 day')) WHERE id = ?`, id)
+		_, err = h.db.Exec(`UPDATE savings_plans SET active = 1, last_error = NULL, book_from = ? WHERE id = ?`, today(), id)
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

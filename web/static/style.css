@@ -1511,3 +1511,17 @@ td.num .cell-sub {
         padding-bottom: 4.5rem;
     }
 }
+
+/* ---------- Sparplan bearbeiten ---------- */
+.plan-edit {
+    margin-top: 0.5rem;
+}
+.plan-edit > summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.plan-edit[open] > summary {
+    margin-bottom: 0.75rem;
+}

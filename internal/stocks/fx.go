@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -195,4 +196,96 @@ func Search(query string) ([]SearchResult, error) {
 		return strings.HasSuffix(results[i].Symbol, ".SW") && !strings.HasSuffix(results[j].Symbol, ".SW")
 	})
 	return results, nil
+}
+
+var isinPattern = regexp.MustCompile(`^[A-Z]{2}[A-Z0-9]{9}[0-9]$`)
+
+// IsISIN prüft, ob q wie eine ISIN aussieht (z. B. LU0446734104).
+func IsISIN(q string) bool { return isinPattern.MatchString(strings.ToUpper(q)) }
+
+// figiExchangeOrder: bevorzugte Börsen (OpenFIGI-Kürzel) – SIX zuerst.
+var figiExchangeOrder = map[string]int{"SW": 0, "SE": 0, "GY": 1, "GR": 2, "LN": 3, "IM": 4, "NA": 5, "FP": 6, "US": 7}
+
+// TickersForISIN fragt OpenFIGI nach den Börsenkürzeln einer ISIN
+// (z. B. LU0446734104 → EUREUA). Gesendet wird nur die ISIN. Die Kürzel
+// sind ohne Börsen-Suffix; das passende Yahoo-Symbol findet Search.
+func TickersForISIN(isin string) ([]string, error) {
+	body := strings.NewReader(`[{"idType":"ID_ISIN","idValue":"` + strings.ToUpper(isin) + `"}]`)
+	req, err := http.NewRequest(http.MethodPost, "https://api.openfigi.com/v3/mapping", body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenFIGI: Status %d", resp.StatusCode)
+	}
+	var parsed []struct {
+		Data []struct {
+			Ticker   string `json:"ticker"`
+			ExchCode string `json:"exchCode"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+	best := map[string]int{}
+	for _, e := range parsed {
+		for _, d := range e.Data {
+			rank, ok := figiExchangeOrder[d.ExchCode]
+			if !ok || d.Ticker == "" || strings.ContainsAny(d.Ticker, " /") {
+				continue
+			}
+			if old, seen := best[d.Ticker]; !seen || rank < old {
+				best[d.Ticker] = rank
+			}
+		}
+	}
+	tickers := make([]string, 0, len(best))
+	for t := range best {
+		tickers = append(tickers, t)
+	}
+	sort.Slice(tickers, func(i, j int) bool {
+		if best[tickers[i]] != best[tickers[j]] {
+			return best[tickers[i]] < best[tickers[j]]
+		}
+		return tickers[i] < tickers[j]
+	})
+	return tickers, nil
+}
+
+// SearchISIN sucht über die Börsenkürzel einer ISIN, wenn Yahoo die ISIN
+// selbst nicht kennt. Es werden nur Treffer geliefert, deren Symbol genau
+// zu einem der Kürzel gehört (EUREUA → EUREUA.SW, EUREUA.MI).
+func SearchISIN(isin string) ([]SearchResult, error) {
+	tickers, err := TickersForISIN(isin)
+	if err != nil {
+		return nil, err
+	}
+	if len(tickers) > 3 {
+		tickers = tickers[:3]
+	}
+	var out []SearchResult
+	seen := map[string]bool{}
+	for _, t := range tickers {
+		results, err := Search(t)
+		if err != nil {
+			continue
+		}
+		for _, r := range results {
+			base, _, _ := strings.Cut(r.Symbol, ".")
+			if base == t && !seen[r.Symbol] {
+				seen[r.Symbol] = true
+				out = append(out, r)
+			}
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return strings.HasSuffix(out[i].Symbol, ".SW") && !strings.HasSuffix(out[j].Symbol, ".SW")
+	})
+	return out, nil
 }

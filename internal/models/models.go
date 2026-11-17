@@ -85,6 +85,7 @@ type SavingsPlan struct {
 	Amount         float64
 	DayOfMonth     int
 	StartDate      string
+	BookFrom       string // frühere Termine werden nicht gekauft
 	AccountID      *int64
 	AccountName    string
 	UserID         int64
@@ -93,6 +94,24 @@ type SavingsPlan struct {
 	LastError      string
 	NextDue        string
 	Items          []SavingsPlanItem
+}
+
+// AccountIDValue liefert die ID des belasteten Kontos oder 0 (für Templates).
+func (p SavingsPlan) AccountIDValue() int64 {
+	if p.AccountID == nil {
+		return 0
+	}
+	return *p.AccountID
+}
+
+// ItemRows liefert die ETF-Zeilen fürs Formular: die vorhandenen plus leere,
+// mindestens fünf und immer mindestens zwei freie.
+func (p SavingsPlan) ItemRows() []SavingsPlanItem {
+	rows := append([]SavingsPlanItem{}, p.Items...)
+	for len(rows) < 5 || len(rows) < len(p.Items)+2 {
+		rows = append(rows, SavingsPlanItem{})
+	}
+	return rows
 }
 
 type SavingsPlanItem struct {

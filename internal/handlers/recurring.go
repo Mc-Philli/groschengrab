@@ -316,7 +316,7 @@ func (h *Handlers) CreateRecurring(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.finishRecurringChange(w, r, "Dauerauftrag angelegt.")
+	h.finishRecurringChange(w, r, "Dauerauftrag angelegt, erste Buchung am "+germanDate(start)+".")
 }
 
 // UpdateRecurring ändert einen Dauerauftrag. Bereits gebuchte Buchungen
@@ -452,4 +452,13 @@ func Dict(pairs ...any) map[string]any {
 		}
 	}
 	return m
+}
+
+// germanDate formatiert 2026-11-25 als 25.11.2026.
+func germanDate(iso string) string {
+	t, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return iso
+	}
+	return t.Format("02.01.2006")
 }

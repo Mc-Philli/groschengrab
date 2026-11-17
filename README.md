@@ -153,6 +153,8 @@ Fertig:
   automatisch am Termin gebucht (Termine vor dem Anlegen werden nicht nachgebucht)
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
 - Als App auf dem Homescreen installierbar (Icon, Vollbild)
+- ISIN-Suche mit Rückfall über OpenFIGI (für ISINs, die Yahoo nicht kennt)
+- Sparpläne bearbeiten; Sparpläne kaufen erst ab dem Tag des Anlegens
   (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 
 Offen:
