@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -59,16 +60,42 @@ func (h *Handlers) CreateRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.db.Exec(`INSERT INTO category_rules (keyword, category) VALUES (?, ?)`, keyword, category); err != nil {
+	updated, err := h.addRule(keyword, category)
+	if err == errRuleExists {
 		redirectWithMessage(w, r, "/settings", "error", "Regel konnte nicht angelegt werden (gibt es das Stichwort schon?).")
 		return
 	}
-
-	if _, err := h.db.Exec(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, category); err != nil {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	msg := "Regel angelegt."
+	if updated > 0 {
+		msg = fmt.Sprintf("Regel angelegt, %d bestehende Buchung(en) zugeordnet.", updated)
+	}
+	redirectWithMessage(w, r, "/settings", "success", msg)
+}
+
+var errRuleExists = errors.New("Regel mit diesem Stichwort gibt es schon")
+
+// addRule legt eine Regel an, nimmt die Kategorie in die Auswahlliste auf und
+// ordnet bestehende, noch unkategorisierte Buchungen mit passender
+// Beschreibung zu. Liefert die Anzahl zugeordneter Buchungen.
+func (h *Handlers) addRule(keyword, category string) (int64, error) {
+	var exists int
+	if err := h.db.QueryRow(`SELECT COUNT(*) FROM category_rules WHERE keyword = ? COLLATE NOCASE`, keyword).Scan(&exists); err != nil {
+		return 0, err
+	}
+	if exists > 0 {
+		return 0, errRuleExists
+	}
+	if _, err := h.db.Exec(`INSERT INTO category_rules (keyword, category) VALUES (?, ?)`, keyword, category); err != nil {
+		return 0, err
+	}
+	if _, err := h.db.Exec(`INSERT OR IGNORE INTO categories (name) VALUES (?)`, category); err != nil {
+		return 0, err
+	}
 	res, err := h.db.Exec(
 		`UPDATE transactions SET category = ?
 		 WHERE (category IS NULL OR TRIM(category) = '')
@@ -77,16 +104,9 @@ func (h *Handlers) CreateRule(w http.ResponseWriter, r *http.Request) {
 		category, keyword,
 	)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return 0, err
 	}
-	updated, _ := res.RowsAffected()
-
-	msg := "Regel angelegt."
-	if updated > 0 {
-		msg = fmt.Sprintf("Regel angelegt, %d bestehende Buchung(en) zugeordnet.", updated)
-	}
-	redirectWithMessage(w, r, "/settings", "success", msg)
+	return res.RowsAffected()
 }
 
 // DeleteRule entfernt eine Regel. Bereits zugeordnete Buchungen bleiben

@@ -26,6 +26,8 @@ type importRow struct {
 	Hash        string
 	Description string
 	Category    string
+	RuleKeyword string // Vorschlag fürs Stichwort, wenn man eine Regel merken will
+	FromRule    bool   // Kategorie kommt aus einer bestehenden Regel
 	Imported    bool   // mit dieser Auftragsnummer schon importiert
 	Duplicate   string // möglicherweise schon von Hand erfasst: Hinweis dazu
 	Selected    bool
@@ -210,7 +212,9 @@ func (h *Handlers) buildImportRows(accountID int64, st bankimport.Statement) ([]
 			Hash:        importHash(e),
 			Description: e.Description(),
 			Category:    matchRule(rules, e.Payee+" "+e.RawText),
+			RuleKeyword: suggestKeyword(e.Payee),
 		}
+		row.FromRule = row.Category != ""
 		row.Imported = imported[row.Hash]
 		if !row.Imported {
 			if c := matchCandidate(candidates, e); c != nil {
@@ -332,6 +336,12 @@ func (h *Handlers) ConfirmImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rulesAdded, rulesSkipped, categorized, err := h.rulesFromImport(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	var balance float64
 	h.db.QueryRow(`SELECT balance FROM accounts WHERE id = ?`, account.ID).Scan(&balance)
 	msg := fmt.Sprintf("%d Buchung(en) auf «%s» importiert. Saldo in der App jetzt %s.", n, account.Name, FormatCHF(balance))
@@ -343,6 +353,16 @@ func (h *Handlers) ConfirmImport(w http.ResponseWriter, r *http.Request) {
 				msg += fmt.Sprintf(" Laut Auszug %s – abgleichen in den Einstellungen unter Konten.", FormatCHF(b))
 			}
 		}
+	}
+	if rulesAdded > 0 {
+		msg += fmt.Sprintf(" %d Regel(n) gemerkt", rulesAdded)
+		if categorized > 0 {
+			msg += fmt.Sprintf(", %d weitere Buchung(en) damit zugeordnet", categorized)
+		}
+		msg += "."
+	}
+	if rulesSkipped > 0 {
+		msg += fmt.Sprintf(" %d Regel(n) gab es schon.", rulesSkipped)
 	}
 	if skipped > 0 {
 		msg += fmt.Sprintf(" %d waren schon importiert und wurden übersprungen.", skipped)
@@ -433,4 +453,53 @@ func (h *Handlers) importLines(userID int64, lines []importLine) (imported, skip
 		imported++
 	}
 	return imported, skipped, tx.Commit()
+}
+
+// rulesFromImport legt die in der Vorschau angehakten Regeln an („Regel
+// merken"). Läuft nach dem Import, damit die neuen Regeln auch importierte
+// Buchungen ohne Kategorie gleich zuordnen.
+func (h *Handlers) rulesFromImport(r *http.Request) (added, existed int, categorized int64, err error) {
+	seen := map[string]bool{}
+	for key := range r.Form {
+		idx, ok := strings.CutPrefix(key, "rule_")
+		if !ok || r.FormValue(key) != "1" || r.FormValue("other_"+idx) != "" && r.FormValue("other_"+idx) != "0" {
+			continue
+		}
+		keyword := strings.TrimSpace(r.FormValue("kw_" + idx))
+		category := strings.TrimSpace(r.FormValue("cat_" + idx))
+		if keyword == "" || category == "" || seen[strings.ToLower(keyword)] {
+			continue
+		}
+		seen[strings.ToLower(keyword)] = true
+		n, err := h.addRule(keyword, category)
+		if err == errRuleExists {
+			existed++
+			continue
+		}
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		added++
+		categorized += n
+	}
+	return added, existed, categorized, nil
+}
+
+// suggestKeyword schlägt aus dem Händler ein Stichwort für eine Regel vor:
+// das erste aussagekräftige Wort, z. B. "Coop-2899 Oftringen" → "Coop",
+// "0143 - Lidl Rothrist" → "Lidl", "MC DONALDS 00851" → "MC DONALDS".
+func suggestKeyword(payee string) string {
+	var words []string
+	for _, f := range strings.FieldsFunc(payee, func(r rune) bool {
+		return r == ' ' || r == '-' || r == '*' || r == ',' || r == '/'
+	}) {
+		if strings.Trim(f, "0123456789.") == "" {
+			continue // reine Nummern (Filialnummer)
+		}
+		words = append(words, f)
+		if len([]rune(strings.Join(words, " "))) >= 3 {
+			break
+		}
+	}
+	return strings.Join(words, " ")
 }

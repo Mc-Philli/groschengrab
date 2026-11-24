@@ -1,0 +1,21 @@
+# Einstellungen für /opt/household-app/backup.sh
+# Kopieren nach /opt/household-app/backup.conf und anpassen. Die Datei wird
+# bei Deploys nicht überschrieben.
+
+# Lokale Backups (auf der SD-Karte) so viele Tage behalten:
+#BACKUP_KEEP_DAYS=30
+
+# --- Kopie auf einen USB-Stick ---------------------------------------------
+# Ordner auf dem eingehängten Stick. Darin einmalig die Markierungsdatei
+# anlegen:  touch /mnt/haushalt-backup/.haushalt-backup
+# Fehlt sie (Stick nicht eingesteckt), wird nichts kopiert und die App warnt.
+#BACKUP_COPY_DIR=/mnt/haushalt-backup
+
+# --- Kopie in die Cloud über rclone ------------------------------------------
+# Name eines mit "rclone config" eingerichteten Ziels. Empfohlen: ein
+# verschlüsseltes "crypt"-Ziel, damit die Kontodaten nicht lesbar beim
+# Cloud-Anbieter liegen.
+#BACKUP_RCLONE_REMOTE=haushalt-crypt:
+
+# Kopien auf Stick/Cloud so viele Tage behalten:
+#BACKUP_COPY_KEEP_DAYS=90

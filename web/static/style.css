@@ -456,7 +456,7 @@ input, select, textarea {
 .inline-form input,
 .inline-form select,
 .ticker-search input,
-.import-main input,
+.import-main input[type="text"],
 .import-main select,
 .import-tools input {
     width: 100%;
@@ -1709,11 +1709,39 @@ td.num .cell-sub {
     color: var(--negative);
 }
 
-.import-main input,
+.import-main input[type="text"],
 .import-main select {
     box-sizing: border-box;
     margin-top: 0;
     padding: 0.45rem 0.65rem;
+}
+
+.import-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.import-rule[hidden] {
+    display: none;
+}
+
+.import-rule label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.import-main .import-rule .rule-keyword {
+    flex: 1;
+    min-width: 0;
+}
+
+.import-row.rule-filled .import-cat {
+    border-color: var(--accent);
 }
 
 .import-submit .btn-primary {
