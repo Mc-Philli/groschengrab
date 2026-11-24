@@ -45,6 +45,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		Tickers         []string
 		TotalValueCHF   float64
 		TotalGainCHF    float64
+		Prices          priceSummary
 		Missing         int
 		SavingsPlans    []models.SavingsPlan
 		Accounts        []models.Account
@@ -60,6 +61,7 @@ func (h *Handlers) Depot(w http.ResponseWriter, r *http.Request) {
 		Tickers:         tickerSuggestions(holdings),
 		TotalValueCHF:   totalCHF,
 		TotalGainCHF:    gainCHF,
+		Prices:          summarizePrices(depots, time.Now()),
 		Missing:         missing,
 		SavingsPlans:    plans,
 		Accounts:        accounts,
@@ -184,6 +186,8 @@ func (h *Handlers) buildDepotViews(holdings []models.Holding) (depots []models.D
 		}
 		if q, ok := quotes[p.Ticker]; ok {
 			p.PriceAvailable = true
+			p.PriceTime, p.PriceFetchedAt = q.MarketTime, q.FetchedAt
+			p.PriceAsOf = marketTimeLabel(q.MarketTime, time.Now())
 			p.CurrentPrice = q.Price
 			p.Currency = q.Currency
 			p.CurrentValue = p.Quantity * q.Price
