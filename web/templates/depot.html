@@ -39,6 +39,14 @@
             <p class="hint-text">⚠️ Für {{.Missing}} Position(en) ist gerade kein Kurs oder Wechselkurs verfügbar – sie fehlen in der Summe.</p>
             {{end}}
             <p class="hint-text">Alle Werte in CHF zum aktuellen Wechselkurs. Fließt ins „Total Vermögen" auf der Startseite ein.</p>
+            {{if .Depots}}
+            <form method="POST" action="/depot/refresh-prices" class="price-refresh">
+                <span class="hint-text">
+                    {{if .Prices.FetchedAt}}Kurse abgerufen um {{.Prices.FetchedAt}}{{if .Prices.MarketAsOf}} · Börsenstand {{.Prices.MarketAsOf}}{{end}}{{else}}Gerade keine Kurse verfügbar{{end}}
+                </span>
+                <button type="submit" class="btn btn-secondary btn-small">↻ Kurse aktualisieren</button>
+            </form>
+            {{end}}
         </section>
 
         <section class="card">
@@ -73,7 +81,7 @@
                     <td data-label="Anzahl" class="num">{{qty .Quantity}}</td>
                     <td data-label="Ø Kaufpreis" class="num">{{printf "%.2f" .AvgPrice}}</td>
                     {{if .PriceAvailable}}
-                    <td data-label="Kurs" class="num">{{printf "%.2f" .CurrentPrice}} {{.Currency}}</td>
+                    <td data-label="Kurs" class="num"><span>{{printf "%.2f" .CurrentPrice}} {{.Currency}}{{if .PriceAsOf}}<span class="cell-sub">{{.PriceAsOf}}</span>{{end}}</span></td>
                     <td data-label="Wert" class="num"><span>{{if .FXAvailable}}<strong>{{chf .ValueCHF}}</strong>{{if ne .Currency "CHF"}}<span class="cell-sub">{{printf "%.2f" .CurrentValue}} {{.Currency}}</span>{{end}}{{else}}{{printf "%.2f" .CurrentValue}} {{.Currency}}<span class="cell-sub">kein Wechselkurs</span>{{end}}</span></td>
                     <td data-label="Gewinn/Verlust" class="num {{if lt .GainAbsolute 0.0}}amount-expense{{else}}amount-income{{end}}">
                         <span>{{if .FXAvailable}}{{chf .GainCHF}}{{else}}{{printf "%.2f" .GainAbsolute}} {{.Currency}}{{end}}<span class="cell-sub">{{printf "%+.1f" .GainPercent}} %</span></span>

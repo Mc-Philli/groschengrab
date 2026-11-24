@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type User struct {
 	ID           int64
 	Name         string
@@ -58,6 +60,9 @@ type PositionView struct {
 	AvgPrice       float64
 	Lots           []Holding
 	PriceAvailable bool
+	PriceTime      time.Time // Börsenzeitpunkt des Kurses
+	PriceFetchedAt time.Time // wann der Kurs abgefragt wurde
+	PriceAsOf      string    // PriceTime für die Anzeige, z. B. "heute 17:30"
 	CurrentPrice   float64
 	Currency       string
 	CurrentValue   float64 // Notierungswährung

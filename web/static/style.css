@@ -1773,3 +1773,17 @@ td.num .cell-sub {
         padding-bottom: 0.75rem;
     }
 }
+
+/* ---------- Kurse aktualisieren ---------- */
+.price-refresh {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.price-refresh .hint-text {
+    margin: 0;
+}

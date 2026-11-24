@@ -139,6 +139,8 @@ Fertig:
 - CSV-Export/-Import
 - Aktien/ETF-Depot mit Kursabfrage (Yahoo Finance): mehrere Depots (z. B. Saxo,
   WillBe), Umrechnung in CHF, ISIN-Suche, Abgleich mit der Broker-Anzahl
+- Kurse: werden beim Seitenaufruf geholt und 15 Minuten gemerkt; „Kurse
+  aktualisieren" holt sofort neu, jede Position zeigt, von wann ihr Kurs ist
 - Sparpläne: monatlicher CHF-Betrag, aufgeteilt auf ETFs, werden automatisch
   gebucht (auch verpasste Termine), optional mit Kontobelastung
 - Sonstige Assets (Immobilie, Fahrzeug, Säule 3a, Bargeld, Schulden, …)

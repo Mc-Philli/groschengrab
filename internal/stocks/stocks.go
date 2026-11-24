@@ -13,9 +13,10 @@ import (
 
 // Quote ist ein einzelner abgefragter Kurs.
 type Quote struct {
-	Price     float64
-	Currency  string
-	FetchedAt time.Time
+	Price      float64
+	Currency   string
+	FetchedAt  time.Time // wann die App den Kurs bei Yahoo abgefragt hat
+	MarketTime time.Time // Zeitpunkt des Kurses an der Börse (leer, wenn unbekannt)
 }
 
 var (
@@ -25,6 +26,18 @@ var (
 
 	httpClient = &http.Client{Timeout: 8 * time.Second}
 )
+
+// ClearCache verwirft alle zwischengespeicherten Kurse, Wechselkurse und
+// Kursverläufe, damit der nächste Seitenaufruf alles frisch abfragt
+// („Kurse aktualisieren").
+func ClearCache() {
+	cacheMu.Lock()
+	cache = map[string]Quote{}
+	cacheMu.Unlock()
+	historyCacheMu.Lock()
+	historyCache = map[string]historyCacheEntry{}
+	historyCacheMu.Unlock()
+}
 
 // GetQuote liefert den aktuellen Kurs eines Tickers (z. B. "AAPL",
 // "VWRL.SW", "NESN.SW"). Ergebnisse werden 15 Minuten zwischengespeichert,
@@ -54,6 +67,7 @@ type chartResponse struct {
 		Result []struct {
 			Meta struct {
 				RegularMarketPrice float64 `json:"regularMarketPrice"`
+				RegularMarketTime  int64   `json:"regularMarketTime"`
 				Currency           string  `json:"currency"`
 			} `json:"meta"`
 		} `json:"result"`
@@ -94,11 +108,15 @@ func fetchQuote(ticker string) (Quote, error) {
 		return Quote{}, fmt.Errorf("kein Kurs für %q verfügbar", ticker)
 	}
 
-	return Quote{
+	q := Quote{
 		Price:     meta.RegularMarketPrice,
 		Currency:  meta.Currency,
 		FetchedAt: time.Now(),
-	}, nil
+	}
+	if meta.RegularMarketTime > 0 {
+		q.MarketTime = time.Unix(meta.RegularMarketTime, 0)
+	}
+	return q, nil
 }
 
 // HistoryPoint ist ein einzelner historischer Kurspunkt.
