@@ -96,13 +96,18 @@
                             {{else}}
                             <input type="text" name="desc_{{$i}}" value="{{.Description}}" class="import-desc" aria-label="Beschreibung">
                             <div class="import-fields">
-                                <input type="text" name="cat_{{$i}}" value="{{.Category}}" list="cat-list" placeholder="Kategorie" aria-label="Kategorie">
+                                <input type="text" name="cat_{{$i}}" value="{{.Category}}" list="cat-list" placeholder="Kategorie" aria-label="Kategorie"
+                                       class="import-cat" data-initial="{{.Category}}" {{if .FromRule}}data-from-rule="1"{{end}}>
                                 <select name="other_{{$i}}" aria-label="Art">
                                     <option value="">{{if .Entry.Credit}}Einnahme{{else}}Ausgabe{{end}}</option>
                                     {{range $.Accounts}}{{if ne .ID $.AccountID}}
                                     <option value="{{.ID}}">Umbuchung {{if $credit}}von{{else}}auf{{end}} {{.Name}}</option>
                                     {{end}}{{end}}
                                 </select>
+                            </div>
+                            <div class="import-rule" hidden>
+                                <label><input type="checkbox" name="rule_{{$i}}" value="1" class="rule-check"> Regel merken:</label>
+                                <input type="text" name="kw_{{$i}}" value="{{.RuleKeyword}}" class="rule-keyword" aria-label="Stichwort der Regel">
                             </div>
                             {{if .Duplicate}}<div class="import-note">⚠️ {{.Duplicate}}</div>{{end}}
                             <input type="hidden" name="date_{{$i}}" value="{{.Entry.Date}}">
@@ -153,6 +158,45 @@
 
             form.addEventListener('change', function (e) {
                 if (e.target.classList.contains('import-check')) update();
+            });
+
+            // „Regel merken": nur anbieten, wenn eine Kategorie eingetragen ist,
+            // die nicht schon aus einer Regel stammt. Angehakt bekommen andere
+            // Zeilen mit dem Stichwort (und noch ohne Kategorie) dieselbe.
+            function ruleBox(row) { return row.querySelector('.import-rule'); }
+            function refreshRule(row) {
+                var cat = row.querySelector('.import-cat'), box = ruleBox(row);
+                if (!cat || !box) return;
+                var v = cat.value.trim();
+                var fromRule = cat.dataset.fromRule && v === cat.dataset.initial;
+                box.hidden = !v || fromRule || row.querySelector('select').value !== '';
+                if (box.hidden) box.querySelector('.rule-check').checked = false;
+            }
+            function applyRule(row) {
+                var box = ruleBox(row);
+                if (!box.querySelector('.rule-check').checked) return;
+                var kw = box.querySelector('.rule-keyword').value.trim().toLowerCase();
+                var cat = row.querySelector('.import-cat').value.trim();
+                if (!kw || !cat) return;
+                form.querySelectorAll('.import-row').forEach(function (other) {
+                    var c = other.querySelector('.import-cat'), d = other.querySelector('.import-desc');
+                    if (other === row || !c || !d || c.value.trim()) return;
+                    if (d.value.toLowerCase().indexOf(kw) >= 0 && other.querySelector('select').value === '') {
+                        c.value = cat;
+                        other.classList.add('rule-filled');
+                    }
+                });
+            }
+            form.querySelectorAll('.import-row').forEach(refreshRule);
+            form.addEventListener('input', function (e) {
+                var row = e.target.closest('.import-row');
+                if (row && (e.target.matches('.import-cat') || e.target.matches('select'))) refreshRule(row);
+            });
+            form.addEventListener('change', function (e) {
+                var row = e.target.closest('.import-row');
+                if (!row) return;
+                if (e.target.matches('.import-cat, select')) refreshRule(row);
+                if (e.target.matches('.rule-check, .rule-keyword')) applyRule(row);
             });
             document.getElementById('from-date').addEventListener('change', function (e) {
                 var from = e.target.value;

@@ -142,11 +142,13 @@ func (h *Handlers) Settings(w http.ResponseWriter, r *http.Request) {
 		Accounts        []models.Account
 		Rules           []models.CategoryRule
 		AccountTypes    []string
+		Backup          backupStatus
 		ErrorMsg        string
 		SuccessMsg      string
 		Page            string
 		CurrentUserName string
 	}{
+		Backup:          readBackupStatus(backupDir(), time.Now()),
 		Categories:      categories,
 		Accounts:        accounts,
 		Rules:           rules,

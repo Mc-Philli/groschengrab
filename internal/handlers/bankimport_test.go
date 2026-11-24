@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"household-app/internal/bankimport"
 )
@@ -88,5 +91,78 @@ func TestBuildImportRowsAndImport(t *testing.T) {
 	rows, _ = h.buildImportRows(giro, st)
 	if !rows[1].Imported || rows[1].Selected {
 		t.Errorf("nach Import: %+v, want als importiert markiert", rows[1])
+	}
+}
+
+func TestSuggestKeyword(t *testing.T) {
+	for in, want := range map[string]string{
+		"Coop-2899 Oftringen Perry Center": "Coop",
+		"0143 - Lidl Rothrist":             "Lidl",
+		"MC DONALDS 00851":                 "MC DONALDS",
+		"AMAZON* BB12A7CN4":                "AMAZON",
+		"Beispiel, Anna":                   "Beispiel",
+		"":                                 "",
+	} {
+		if got := suggestKeyword(in); got != want {
+			t.Errorf("suggestKeyword(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestRulesFromImport(t *testing.T) {
+	h := newDepotTestHandlers(t)
+	giro := accountID(t, h, "Privatkonto")
+	mustExec(t, h, `INSERT INTO category_rules (keyword, category) VALUES ('migros', 'Lebensmittel')`)
+	// Importierte Buchung ohne Kategorie: bekommt sie über die neue Regel.
+	if err := h.insertTransactionAndUpdateBalance(giro, sql.NullInt64{}, 1,
+		transactionRecord{BookedAt: "2026-11-02", Kind: "expense", Amount: 12, Description: "Denner Zofingen"}); err != nil {
+		t.Fatal(err)
+	}
+
+	form := url.Values{
+		"rule_1": {"1"}, "kw_1": {"Denner"}, "cat_1": {"Lebensmittel"},
+		"rule_2": {"1"}, "kw_2": {"Migros"}, "cat_2": {"Lebensmittel"}, // gibt es schon
+		"rule_3": {"1"}, "kw_3": {"Ich"}, "cat_3": {"Sparen"}, "other_3": {"2"}, // Umbuchung: keine Regel
+		"rule_4": {"1"}, "kw_4": {"denner"}, "cat_4": {"Lebensmittel"}, // doppelt in derselben Vorschau
+		"kw_5": {"SBB"}, "cat_5": {"Verkehr"}, // nicht angehakt
+	}
+	req := httptest.NewRequest("POST", "/", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.ParseForm()
+
+	added, existed, categorized, err := h.rulesFromImport(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if added != 1 || existed != 1 || categorized != 1 {
+		t.Errorf("added %d, existed %d, categorized %d; want 1, 1, 1", added, existed, categorized)
+	}
+	var n int
+	h.db.QueryRow(`SELECT COUNT(*) FROM category_rules`).Scan(&n)
+	if n != 2 {
+		t.Errorf("%d Regeln, want 2", n)
+	}
+	var cat string
+	h.db.QueryRow(`SELECT category FROM transactions WHERE description = 'Denner Zofingen'`).Scan(&cat)
+	if cat != "Lebensmittel" {
+		t.Errorf("Kategorie %q, want Lebensmittel", cat)
+	}
+}
+
+func TestReadBackupStatus(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.Local)
+	if st := readBackupStatus(dir, now); st.Found {
+		t.Errorf("ohne Datei: %+v", st)
+	}
+	os.WriteFile(filepath.Join(dir, "status"), []byte("time=2026-11-24T03:05:00\nfile=app-x.db.gz\nsize=1.2M\ncopy=USB: ok; Cloud: ok\n"), 0o644)
+	st := readBackupStatus(dir, now)
+	if !st.Found || st.Stale || !st.CopyOK || st.When != "24.11.2026 03:05" || st.Size != "1.2M" {
+		t.Errorf("frisch: %+v", st)
+	}
+	os.WriteFile(filepath.Join(dir, "status"), []byte("time=2026-11-20T03:05:00\ncopy=USB: Ziel /mnt/usb nicht bereit\n"), 0o644)
+	st = readBackupStatus(dir, now)
+	if !st.Stale || st.CopyOK {
+		t.Errorf("alt + Fehler: %+v", st)
 	}
 }

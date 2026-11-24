@@ -180,6 +180,21 @@
             </div>
             <p class="hint-text">Das Import-Format entspricht genau dem Export. Am einfachsten: erst exportieren, in Excel/Numbers bearbeiten, dann wieder importieren. Konten beim Buchungs-Import müssen bereits existieren (Zuordnung über den Namen).</p>
         </section>
+        <section class="card" id="backups">
+            <h2>Backups</h2>
+            {{with .Backup}}{{if .Found}}
+            <p>Letztes Backup: <strong>{{.When}}</strong>{{if .Size}} · {{.Size}}{{end}}
+                {{if .Stale}}<br><span class="amount-expense">⚠️ Älter als 36 Stunden – das nächtliche Backup scheint nicht zu laufen.</span>{{end}}</p>
+            {{if .Copy}}
+            <p class="{{if .CopyOK}}amount-income{{else}}amount-expense{{end}}">{{if .CopyOK}}✓{{else}}⚠️{{end}} Kopie weg von der SD-Karte: {{.Copy}}</p>
+            {{else}}
+            <p class="hint-text">⚠️ Die Backups liegen bisher nur auf der SD-Karte des Pi. Fällt die Karte aus, sind sie mit weg. Eine zusätzliche Kopie auf einen USB-Stick oder in die Cloud lässt sich in <code>/opt/household-app/backup.conf</code> einrichten (siehe README, Abschnitt „Backups").</p>
+            {{end}}
+            {{else}}
+            <p class="empty-hint">Noch kein Backup gefunden. Auf dem Pi läuft es jede Nacht um ca. 3 Uhr und vor jedem Deploy.</p>
+            {{end}}{{end}}
+        </section>
+
         <section class="card danger-zone">
             <h2>Neu anfangen</h2>
             <details>

@@ -13,6 +13,10 @@ echo "== Backup: Skripte nach /opt/household-app kopieren =="
 mkdir -p /opt/household-app/backups
 cp "$SCRIPT_DIR/backup.sh" "$SCRIPT_DIR/restore-backup.sh" /opt/household-app/
 chmod +x /opt/household-app/backup.sh /opt/household-app/restore-backup.sh
+if [ ! -f /opt/household-app/backup.conf ]; then
+    cp "$SCRIPT_DIR/backup.conf.example" /opt/household-app/backup.conf
+    echo "Vorlage /opt/household-app/backup.conf angelegt (Kopie auf USB/Cloud dort einrichten)."
+fi
 
 echo "== Backup: systemd-Timer installieren =="
 sudo cp "$SCRIPT_DIR/household-app-backup.service" /etc/systemd/system/

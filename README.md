@@ -96,9 +96,52 @@ sie wieder.
 
 **Wichtig:** Die Backups liegen auf derselben SD-Karte wie die Datenbank. Sie
 schützen vor Bedienfehlern, missglückten Updates und einer beschädigten
-Datenbank, **nicht** vor einem Ausfall der SD-Karte. Dafür den Speicherort per
-`BACKUP_DIR` in `/etc/systemd/system/household-app-backup.service` z. B. auf
-einen USB-Stick legen, oder später zusätzlich in die Cloud kopieren.
+Datenbank, **nicht** vor einem Ausfall der SD-Karte. Dafür kann `backup.sh`
+jedes Backup zusätzlich auf einen USB-Stick und/oder in die Cloud kopieren.
+Ob das klappt, zeigt die App unter **Einstellungen → Backups**.
+
+Die Einstellungen stehen in `/opt/household-app/backup.conf` (wird bei
+Deploys nicht überschrieben; Vorlage: `deploy/backup.conf.example`):
+
+```bash
+cp deploy/backup.conf.example /opt/household-app/backup.conf   # falls noch nicht da
+nano /opt/household-app/backup.conf
+```
+
+**USB-Stick** (einmalig):
+
+```bash
+lsblk -f                                  # Stick finden, z. B. sda1, UUID notieren
+sudo mkdir -p /mnt/haushalt-backup
+# Beim Start automatisch einhängen; "nofail", damit der Pi auch ohne Stick startet:
+echo 'UUID=<uuid> /mnt/haushalt-backup auto nofail,uid=pi,gid=pi 0 0' | sudo tee -a /etc/fstab
+sudo mount -a
+touch /mnt/haushalt-backup/.haushalt-backup   # Markierung: hier darf gesichert werden
+```
+
+Bei `uid`/`gid` deinen Benutzernamen einsetzen (bei ext4-formatierten Sticks
+die beiden Optionen weglassen und stattdessen
+`sudo chown pi: /mnt/haushalt-backup`). Dann in `backup.conf`
+`BACKUP_COPY_DIR=/mnt/haushalt-backup` setzen. Die Markierungsdatei sorgt
+dafür, dass bei abgezogenem Stick nicht still auf die SD-Karte darunter
+geschrieben wird.
+
+**Cloud** (optional, über [rclone](https://rclone.org)):
+
+```bash
+sudo apt-get install -y rclone
+rclone config    # Ziel einrichten (z. B. Google Drive, OneDrive, pCloud),
+                 # darauf ein "crypt"-Ziel, damit die Daten verschlüsselt hochgehen
+```
+
+Dann in `backup.conf` z. B. `BACKUP_RCLONE_REMOTE=haushalt-crypt:` setzen.
+Das Passwort des crypt-Ziels unbedingt zusätzlich woanders notieren, ohne
+lassen sich die Backups nicht wiederherstellen.
+
+**Testen:** `/opt/household-app/backup.sh` von Hand starten. Die letzte Zeile
+nennt das Ergebnis der Kopien, die Einstellungen der App zeigen es ebenfalls.
+Zum Wiederherstellen eine Kopie vom Stick/aus der Cloud nach
+`/opt/household-app/backups/` legen und `restore-backup.sh` wie oben nutzen.
 
 ## Als App aufs iPhone
 
@@ -147,7 +190,8 @@ Fertig:
   mit Wertverlauf
 - Total Vermögen und Vermögensentwicklung = Konten + Depots + sonstige Assets
 - Diagramme: Vermögens- und Depotverlauf, Sankey Einnahmen/Ausgaben
-- Nächtliches Datenbank-Backup auf dem Pi (lokal) inkl. Wiederherstellung
+- Nächtliches Datenbank-Backup auf dem Pi inkl. Wiederherstellung, optional
+  mit Kopie auf USB-Stick/Cloud; Status in den Einstellungen
 - Handytaugliches Layout mit Dunkelmodus
 - Buchungen bearbeiten (Salden werden automatisch korrigiert), Konten
   umbenennen und Saldo mit der Bank abgleichen
@@ -165,6 +209,8 @@ Fertig:
   Kategorie per Regel, Umbuchung auf ein anderes Konto wählbar, Saldo-Kontrolle
   gegen den Auszug; schon importierte (Auftragsnummer) und vermutlich schon von
   Hand erfasste Buchungen werden erkannt
+- Import-Vorschau: „Regel merken" legt aus einer Kategorie direkt eine
+  Kategorie-Regel an (Stichwort wird vorgeschlagen)
 
 Offen:
 
