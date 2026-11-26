@@ -22,7 +22,18 @@
         <section class="card">
             <h2 class="card-title-row">Neue Buchung <a href="/recurring" class="btn btn-secondary btn-small">🔁 Daueraufträge</a></h2>
             {{if .HasAccounts}}
-            <form method="POST" action="/transactions" class="form-grid">
+            <div class="receipt-scan" id="quittung">
+                <label class="btn btn-secondary receipt-btn">
+                    <span>📷 Quittung scannen</span>
+                    <input type="file" accept="image/*" capture="environment" id="receipt-photo" hidden>
+                </label>
+                <p class="hint-text" id="receipt-status" aria-live="polite">Foto vom Bon machen – Betrag, Datum und Händler werden vorausgefüllt.</p>
+                <details class="receipt-text" id="receipt-text-box" hidden>
+                    <summary>Erkannter Text</summary>
+                    <pre id="receipt-text"></pre>
+                </details>
+            </div>
+            <form method="POST" action="/transactions" class="form-grid" id="tx-new-form">
                 <input type="hidden" name="from" value="new">
                 {{template "txfields" .Form}}
                 <label>Datum<br>
@@ -32,6 +43,7 @@
                     <button type="submit" class="btn btn-primary">Buchen</button>
                 </div>
             </form>
+            <script src="{{static "receipt.js"}}"></script>
             {{else}}
             <p class="empty-hint">Bitte zuerst in den <a href="/settings">Einstellungen</a> ein Konto anlegen.</p>
             {{end}}
