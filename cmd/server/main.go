@@ -69,6 +69,7 @@ func main() {
 	mux.HandleFunc("POST /settings/reset", h.RequireAuth(h.ResetData))
 	mux.HandleFunc("POST /transactions", h.RequireAuth(h.CreateTransaction))
 	mux.HandleFunc("GET /transactions/new", h.RequireAuth(h.NewTransactionPage))
+	mux.HandleFunc("POST /api/receipt", h.RequireAuth(h.ScanReceipt))
 	mux.HandleFunc("GET /transactions/{id}/edit", h.RequireAuth(h.EditTransactionPage))
 	mux.HandleFunc("POST /transactions/{id}", h.RequireAuth(h.UpdateTransaction))
 	mux.HandleFunc("POST /transactions/{id}/delete", h.RequireAuth(h.DeleteTransaction))

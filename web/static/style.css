@@ -1815,3 +1815,37 @@ td.num .cell-sub {
 .price-refresh .hint-text {
     margin: 0;
 }
+
+/* Quittung scannen */
+.receipt-scan {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+.receipt-btn {
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+}
+.receipt-btn.busy {
+    opacity: 0.6;
+    pointer-events: none;
+}
+.receipt-scan .hint-text {
+    margin: 8px 0 0;
+}
+.receipt-text {
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+.receipt-text pre {
+    white-space: pre-wrap;
+    max-height: 240px;
+    overflow: auto;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.receipt-filled {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}

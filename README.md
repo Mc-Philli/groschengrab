@@ -202,7 +202,7 @@ Fertig:
 - Als App auf dem Homescreen installierbar (Icon, Vollbild)
 - Bereiche auf Start- und Depot-Seite einklappbar (Zustand pro Gerät gemerkt);
   der +-Knopf auf dem Handy öffnet ein Menü: Ausgabe, Einnahme, Umbuchung,
-  Dauerauftrag, Depot-Kauf, Sparplan, Asset, Kontoauszug
+  Quittung, Dauerauftrag, Depot-Kauf, Sparplan, Asset, Kontoauszug
 - ISIN-Suche mit Rückfall über OpenFIGI (für ISINs, die Yahoo nicht kennt)
 - Sparpläne bearbeiten; Sparpläne kaufen erst ab dem Tag des Anlegens
 - WIR-Kontoauszug (PDF „Kontobewegungen") importieren: Vorschau mit
@@ -211,9 +211,11 @@ Fertig:
   Hand erfasste Buchungen werden erkannt
 - Import-Vorschau: „Regel merken" legt aus einer Kategorie direkt eine
   Kategorie-Regel an (Stichwort wird vorgeschlagen)
+- Quittung scannen (Neue Buchung oder +-Menü): Foto → Tesseract auf dem Pi →
+  Betrag, Datum, Händler und Kategorie (per Regel) werden ins Formular
+  eingetragen; du prüfst und buchst. Das Foto wird nicht gespeichert. Braucht
+  `tesseract-ocr` und `tesseract-ocr-deu` (installiert `setup-pi.sh`)
 
 Offen:
 
-- Kassenzettel-Upload: Foto → Tesseract (per `os/exec` aufgerufen) →
-  einfache Textregeln zur Vorschlagsgenerierung → Bestätigung durch dich
-  in der Oberfläche, bevor gebucht wird
+- Budgets pro Kategorie
