@@ -62,7 +62,9 @@ func (h *Handlers) loadSavingsPlans() ([]models.SavingsPlan, error) {
 			plans[i].Items = append(plans[i].Items, it)
 		}
 		items.Close()
-		plans[i].NextDue = nextExecutionDate(plans[i], "9999-12-31")
+		if d := nextExecutionDate(plans[i], "9999-12-31"); d != "" {
+			plans[i].NextDue = nextBusinessDay(d)
+		}
 	}
 	return plans, nil
 }
@@ -95,10 +97,10 @@ func nextExecutionDate(p models.SavingsPlan, until string) string {
 	return s
 }
 
-// executeSavingsPlan führt einen Sparplan für einen Stichtag aus: je ETF eine
-// neue Tranche, optional eine Belastung des Kontos. Entweder alles oder
-// nichts wird gespeichert.
-func (h *Handlers) executeSavingsPlan(p models.SavingsPlan, date string) error {
+// executeSavingsPlan führt einen Sparplan für den Termin due aus: je ETF eine
+// neue Tranche, optional eine Belastung des Kontos, beides mit Kurs und Datum
+// von date (nächster Werktag). Entweder alles oder nichts wird gespeichert.
+func (h *Handlers) executeSavingsPlan(p models.SavingsPlan, due, date string) error {
 	type lot struct {
 		ticker, name string
 		qty, price   float64
@@ -140,7 +142,7 @@ func (h *Handlers) executeSavingsPlan(p models.SavingsPlan, date string) error {
 			return err
 		}
 	}
-	if _, err := tx.Exec(`UPDATE savings_plans SET last_executed_on = ?, last_error = NULL WHERE id = ?`, date, p.ID); err != nil {
+	if _, err := tx.Exec(`UPDATE savings_plans SET last_executed_on = ?, last_error = NULL WHERE id = ?`, due, p.ID); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -168,7 +170,12 @@ func (h *Handlers) RunDueSavingsPlans(today string) (executed int, errs []string
 			if due == "" {
 				break
 			}
-			if err := h.executeSavingsPlan(p, due); err != nil {
+			// Wochenende/Feiertag: erst am nächsten Werktag kaufen.
+			bookOn := nextBusinessDay(due)
+			if bookOn > today {
+				break
+			}
+			if err := h.executeSavingsPlan(p, due, bookOn); err != nil {
 				msg := fmt.Sprintf("Sparplan %s (%s): %v", depotDisplayName(p.Depot), due, err)
 				errs = append(errs, msg)
 				_, _ = h.db.Exec(`UPDATE savings_plans SET last_error = ? WHERE id = ?`, msg, p.ID)

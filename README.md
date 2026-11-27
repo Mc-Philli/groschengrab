@@ -197,6 +197,8 @@ Fertig:
   umbenennen und Saldo mit der Bank abgleichen
 - Daueraufträge (monatlich, vierteljährlich, halbjährlich, jährlich), werden
   automatisch am Termin gebucht (Termine vor dem Anlegen werden nicht nachgebucht)
+- Daueraufträge und Sparpläne: Termine an Wochenenden und Schweizer
+  Bankfeiertagen werden erst am nächsten Werktag gebucht
 - Konto samt Buchungen löschen; „Neu anfangen" löscht alle Finanzdaten
   (Logins bleiben) und legt vorher eine Sicherheitskopie neben die Datenbank
 - Als App auf dem Homescreen installierbar (Icon, Vollbild)
