@@ -93,14 +93,18 @@ func (h *Handlers) loadRecurring() ([]models.RecurringTransaction, error) {
 			return nil, err
 		}
 		if x.Active {
-			x.NextDue = nextRecurringDate(x, "9999-12-31")
+			if d := nextRecurringDate(x, "9999-12-31"); d != "" {
+				x.NextDue = nextBusinessDay(d)
+			}
 		}
 		list = append(list, x)
 	}
 	return list, rows.Err()
 }
 
-func (h *Handlers) executeRecurring(x models.RecurringTransaction, date string) error {
+// executeRecurring bucht den Termin due mit Buchungsdatum bookOn (nächster
+// Werktag) und merkt sich due als zuletzt ausgeführten Termin.
+func (h *Handlers) executeRecurring(x models.RecurringTransaction, due, bookOn string) error {
 	tx, err := h.db.Begin()
 	if err != nil {
 		return err
@@ -108,7 +112,7 @@ func (h *Handlers) executeRecurring(x models.RecurringTransaction, date string) 
 	defer tx.Rollback()
 	to := sql.NullInt64{Int64: x.ToAccountID, Valid: x.ToAccountID != 0}
 	rec := transactionRecord{
-		BookedAt:    date,
+		BookedAt:    bookOn,
 		Kind:        x.Kind,
 		Amount:      x.Amount,
 		Category:    x.Category,
@@ -118,13 +122,15 @@ func (h *Handlers) executeRecurring(x models.RecurringTransaction, date string) 
 	if err := insertTransactionTx(tx, x.AccountID, to, x.UserID, rec, ""); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE recurring_transactions SET last_executed_on = ?, last_error = NULL WHERE id = ?`, date, x.ID); err != nil {
+	if _, err := tx.Exec(`UPDATE recurring_transactions SET last_executed_on = ?, last_error = NULL WHERE id = ?`, due, x.ID); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-// RunDueRecurring bucht alle fälligen Termine bis einschließlich today.
+// RunDueRecurring bucht alle fälligen Termine bis einschließlich today. Fällt
+// ein Termin aufs Wochenende oder einen Bankfeiertag, wird er erst am
+// nächsten Werktag (mit dessen Datum) gebucht.
 func (h *Handlers) RunDueRecurring(today string) (executed int, errs []string) {
 	recurringRunMu.Lock()
 	defer recurringRunMu.Unlock()
@@ -142,7 +148,11 @@ func (h *Handlers) RunDueRecurring(today string) (executed int, errs []string) {
 			if due == "" {
 				break
 			}
-			if err := h.executeRecurring(x, due); err != nil {
+			bookOn := nextBusinessDay(due)
+			if bookOn > today {
+				break
+			}
+			if err := h.executeRecurring(x, due, bookOn); err != nil {
 				msg := fmt.Sprintf("Dauerauftrag %s (%s): %v", recurringTitle(x), due, err)
 				errs = append(errs, msg)
 				_, _ = h.db.Exec(`UPDATE recurring_transactions SET last_error = ? WHERE id = ?`, msg, x.ID)

@@ -132,7 +132,8 @@ func TestSavingsPlanCatchUpAndFX(t *testing.T) {
 	}
 
 	// Vermögensverlauf: vor dem ersten Kauf 0 Depot, danach 500 je Monat.
-	vals, err := h.depotValuesByDate([]string{"2026-09-04", "2026-09-05", "2026-10-20", "2026-11-13"})
+	// Der 5.9.2026 ist ein Samstag, gekauft wird erst am Montag, 7.9.
+	vals, err := h.depotValuesByDate([]string{"2026-09-05", "2026-09-07", "2026-10-20", "2026-11-13"})
 	if err != nil {
 		t.Fatal(err)
 	}
